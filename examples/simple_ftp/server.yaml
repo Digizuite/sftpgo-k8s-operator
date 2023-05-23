@@ -1,0 +1,6 @@
+apiVersion: sftpgo.zlepper.dk/v1alpha1
+kind: Server
+metadata:
+  name: sftpgo
+spec: {}
+

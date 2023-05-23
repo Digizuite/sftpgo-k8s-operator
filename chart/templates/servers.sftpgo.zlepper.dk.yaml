@@ -20,12 +20,1357 @@ spec:
         properties:
           spec:
             properties:
-              replicas:
-                format: uint32
-                minimum: 0.0
-                type: integer
-            required:
-            - replicas
+              acme:
+                nullable: true
+                properties:
+                  ca_endpoint:
+                    nullable: true
+                    type: string
+                  certs_path:
+                    nullable: true
+                    type: string
+                  domains:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  email:
+                    nullable: true
+                    type: string
+                  http01_challenge:
+                    nullable: true
+                    properties:
+                      port:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      proxy_header:
+                        nullable: true
+                        type: string
+                      webroot:
+                        nullable: true
+                        type: string
+                    type: object
+                  key_type:
+                    nullable: true
+                    type: string
+                  renew_days:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  tls_alpn01_challenge:
+                    nullable: true
+                    properties:
+                      port:
+                        format: int64
+                        nullable: true
+                        type: integer
+                    type: object
+                type: object
+              command:
+                nullable: true
+                properties:
+                  commands:
+                    items:
+                      properties:
+                        args:
+                          items:
+                            type: string
+                          nullable: true
+                          type: array
+                        env:
+                          items:
+                            type: string
+                          nullable: true
+                          type: array
+                        hook:
+                          nullable: true
+                          type: string
+                        path:
+                          type: string
+                        timeout:
+                          format: int64
+                          nullable: true
+                          type: integer
+                      required:
+                      - path
+                      type: object
+                    nullable: true
+                    type: array
+                  env:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  timeout:
+                    format: int64
+                    nullable: true
+                    type: integer
+                type: object
+              common:
+                nullable: true
+                properties:
+                  actions:
+                    nullable: true
+                    properties:
+                      execute_on:
+                        items:
+                          type: string
+                        nullable: true
+                        type: array
+                      execute_sync:
+                        items:
+                          type: string
+                        nullable: true
+                        type: array
+                      hook:
+                        nullable: true
+                        type: string
+                    type: object
+                  allow_self_connections:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  allowlist_status:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  data_retention_hook:
+                    nullable: true
+                    type: string
+                  defender:
+                    nullable: true
+                    properties:
+                      ban_time:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      ban_time_increment:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      driver:
+                        nullable: true
+                        type: string
+                      enabled:
+                        nullable: true
+                        type: boolean
+                      entries_hard_limit:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      entries_soft_limit:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      observation_time:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      score_invalid:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      score_limit_exceeded:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      score_no_auth:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      score_valid:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      threshold:
+                        format: int64
+                        nullable: true
+                        type: integer
+                    type: object
+                  idle_timeout:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  max_per_host_connections:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  max_total_connections:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  post_connect_hook:
+                    nullable: true
+                    type: string
+                  post_disconnect_hook:
+                    nullable: true
+                    type: string
+                  proxy_allowed:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  proxy_protocol:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  proxy_skipped:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  rate_limiters:
+                    items:
+                      properties:
+                        average:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        burst:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        entries_hard_limit:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        entries_soft_limit:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        generate_defender_events:
+                          nullable: true
+                          type: boolean
+                        period:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        protocols:
+                          items:
+                            type: string
+                          nullable: true
+                          type: array
+                        type:
+                          format: int64
+                          nullable: true
+                          type: integer
+                      type: object
+                    nullable: true
+                    type: array
+                  rename_mode:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  setstat_mode:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  startup_hook:
+                    nullable: true
+                    type: string
+                  temp_path:
+                    nullable: true
+                    type: string
+                  upload_mode:
+                    enum:
+                    - Standard
+                    - Atomic
+                    - AtomicWithResumeSupport
+                    nullable: true
+                    type: string
+                type: object
+              data_provider:
+                nullable: true
+                properties:
+                  actions:
+                    nullable: true
+                    properties:
+                      execute_for:
+                        items:
+                          enum:
+                          - user
+                          - folder
+                          - group
+                          - admin
+                          - api_key
+                          - share
+                          - event_action
+                          - event_rule
+                          type: string
+                        nullable: true
+                        type: array
+                      execute_on:
+                        items:
+                          enum:
+                          - add
+                          - update
+                          - delete
+                          type: string
+                        nullable: true
+                        type: array
+                      hook:
+                        nullable: true
+                        type: string
+                    type: object
+                  backups_path:
+                    nullable: true
+                    type: string
+                  check_password_hook:
+                    nullable: true
+                    type: string
+                  check_password_scope:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  client_cert:
+                    nullable: true
+                    type: string
+                  client_key:
+                    nullable: true
+                    type: string
+                  connection_string:
+                    nullable: true
+                    type: string
+                  create_default_admin:
+                    nullable: true
+                    type: boolean
+                  delayed_quota_update:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  disable_sni:
+                    nullable: true
+                    type: boolean
+                  driver:
+                    nullable: true
+                    type: string
+                  external_auth_hook:
+                    nullable: true
+                    type: string
+                  external_auth_scope:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  host:
+                    nullable: true
+                    type: string
+                  is_shared:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  name:
+                    nullable: true
+                    type: string
+                  naming_rules:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  node:
+                    nullable: true
+                    properties:
+                      host:
+                        nullable: true
+                        type: string
+                      port:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      proto:
+                        nullable: true
+                        type: string
+                    type: object
+                  password:
+                    nullable: true
+                    type: string
+                  password_caching:
+                    nullable: true
+                    type: boolean
+                  password_hashing:
+                    nullable: true
+                    properties:
+                      algo:
+                        nullable: true
+                        type: string
+                      argon2_options:
+                        nullable: true
+                        properties:
+                          iterations:
+                            format: int64
+                            nullable: true
+                            type: integer
+                          memory:
+                            format: int64
+                            nullable: true
+                            type: integer
+                          parallelism:
+                            format: int64
+                            nullable: true
+                            type: integer
+                        type: object
+                      bcrypt_options:
+                        nullable: true
+                        properties:
+                          cost:
+                            format: int64
+                            nullable: true
+                            type: integer
+                        type: object
+                    type: object
+                  password_validation:
+                    nullable: true
+                    properties:
+                      admins:
+                        nullable: true
+                        properties:
+                          min_entropy:
+                            format: int64
+                            nullable: true
+                            type: integer
+                        type: object
+                      users:
+                        nullable: true
+                        properties:
+                          min_entropy:
+                            format: int64
+                            nullable: true
+                            type: integer
+                        type: object
+                    type: object
+                  pool_size:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  port:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  post_login_hook:
+                    nullable: true
+                    type: string
+                  post_login_scope:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  pre_login_hook:
+                    nullable: true
+                    type: string
+                  root_cert:
+                    nullable: true
+                    type: string
+                  sql_tables_prefix:
+                    nullable: true
+                    type: string
+                  sslmode:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  target_session_attrs:
+                    nullable: true
+                    type: string
+                  track_quota:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  update_mode:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  username:
+                    nullable: true
+                    type: string
+                  users_base_dir:
+                    nullable: true
+                    type: string
+                type: object
+              ftpd:
+                nullable: true
+                properties:
+                  active_transfers_port_non_20:
+                    nullable: true
+                    type: boolean
+                  banner:
+                    nullable: true
+                    type: string
+                  banner_file:
+                    nullable: true
+                    type: string
+                  bindings:
+                    items:
+                      properties:
+                        active_connections_security:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        address:
+                          nullable: true
+                          type: string
+                        apply_proxy_config:
+                          nullable: true
+                          type: boolean
+                        certificate_file:
+                          nullable: true
+                          type: string
+                        certificate_key_file:
+                          nullable: true
+                          type: string
+                        client_auth_type:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        debug:
+                          nullable: true
+                          type: boolean
+                        force_passive_ip:
+                          nullable: true
+                          type: string
+                        min_tls_version:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        passive_connections_security:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        passive_host:
+                          nullable: true
+                          type: string
+                        passive_ip_overrides:
+                          items:
+                            properties:
+                              ip:
+                                nullable: true
+                                type: string
+                              networks:
+                                items:
+                                  type: string
+                                nullable: true
+                                type: array
+                            type: object
+                          nullable: true
+                          type: array
+                        port:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        tls_cipher_suites:
+                          items:
+                            type: string
+                          nullable: true
+                          type: array
+                        tls_mode:
+                          format: int64
+                          nullable: true
+                          type: integer
+                      type: object
+                    nullable: true
+                    type: array
+                  ca_certificates:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  ca_revocation_lists:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  certificate_file:
+                    nullable: true
+                    type: string
+                  certificate_key_file:
+                    nullable: true
+                    type: string
+                  combine_support:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  disable_active_mode:
+                    nullable: true
+                    type: boolean
+                  enable_site:
+                    nullable: true
+                    type: boolean
+                  hash_support:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  passive_port_range:
+                    nullable: true
+                    properties:
+                      end:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      start:
+                        format: int64
+                        nullable: true
+                        type: integer
+                    type: object
+                type: object
+              http:
+                nullable: true
+                properties:
+                  ca_certificates:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  certificates:
+                    items:
+                      properties:
+                        cert:
+                          type: string
+                        key:
+                          type: string
+                      required:
+                      - cert
+                      - key
+                      type: object
+                    nullable: true
+                    type: array
+                  headers:
+                    items:
+                      properties:
+                        key:
+                          type: string
+                        url:
+                          nullable: true
+                          type: string
+                        value:
+                          type: string
+                      required:
+                      - key
+                      - value
+                      type: object
+                    nullable: true
+                    type: array
+                  retry_max:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  retry_wait_max:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  retry_wait_min:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  skip_tls_verify:
+                    nullable: true
+                    type: boolean
+                  timeout:
+                    format: int64
+                    nullable: true
+                    type: integer
+                type: object
+              httpd:
+                nullable: true
+                properties:
+                  bindings:
+                    items:
+                      properties:
+                        address:
+                          nullable: true
+                          type: string
+                        branding:
+                          nullable: true
+                          properties:
+                            web_admin:
+                              nullable: true
+                              properties:
+                                default_css:
+                                  nullable: true
+                                  type: string
+                                disclaimer_name:
+                                  nullable: true
+                                  type: string
+                                disclaimer_path:
+                                  nullable: true
+                                  type: string
+                                extra_css:
+                                  items:
+                                    type: string
+                                  nullable: true
+                                  type: array
+                                favicon_path:
+                                  nullable: true
+                                  type: string
+                                login_image_path:
+                                  nullable: true
+                                  type: string
+                                logo_path:
+                                  nullable: true
+                                  type: string
+                                name:
+                                  nullable: true
+                                  type: string
+                                short_name:
+                                  nullable: true
+                                  type: string
+                              type: object
+                            web_client:
+                              nullable: true
+                              properties:
+                                default_css:
+                                  nullable: true
+                                  type: string
+                                disclaimer_name:
+                                  nullable: true
+                                  type: string
+                                disclaimer_path:
+                                  nullable: true
+                                  type: string
+                                extra_css:
+                                  items:
+                                    type: string
+                                  nullable: true
+                                  type: array
+                                favicon_path:
+                                  nullable: true
+                                  type: string
+                                login_image_path:
+                                  nullable: true
+                                  type: string
+                                logo_path:
+                                  nullable: true
+                                  type: string
+                                name:
+                                  nullable: true
+                                  type: string
+                                short_name:
+                                  nullable: true
+                                  type: string
+                              type: object
+                          type: object
+                        certificate_file:
+                          nullable: true
+                          type: string
+                        certificate_key_file:
+                          nullable: true
+                          type: string
+                        client_auth_type:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        client_ip_header_depth:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        client_ip_proxy_header:
+                          nullable: true
+                          type: string
+                        enable_https:
+                          nullable: true
+                          type: boolean
+                        enable_rest_api:
+                          nullable: true
+                          type: boolean
+                        enable_web_admin:
+                          nullable: true
+                          type: boolean
+                        enable_web_client:
+                          nullable: true
+                          type: boolean
+                        enabled_login_methods:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        hide_login_url:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        min_tls_version:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        oidc:
+                          nullable: true
+                          properties:
+                            client_id:
+                              nullable: true
+                              type: string
+                            client_secret:
+                              nullable: true
+                              type: string
+                            config_url:
+                              nullable: true
+                              type: string
+                            custom_fields:
+                              items:
+                                type: string
+                              nullable: true
+                              type: array
+                            debug:
+                              nullable: true
+                              type: boolean
+                            implicit_roles:
+                              nullable: true
+                              type: boolean
+                            insecure_skip_signature_check:
+                              nullable: true
+                              type: boolean
+                            redirect_base_url:
+                              nullable: true
+                              type: string
+                            role_field:
+                              nullable: true
+                              type: string
+                            scopes:
+                              items:
+                                type: string
+                              nullable: true
+                              type: array
+                            username_field:
+                              nullable: true
+                              type: string
+                          type: object
+                        port:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        proxy_allowed:
+                          items:
+                            type: string
+                          nullable: true
+                          type: array
+                        render_openapi:
+                          nullable: true
+                          type: boolean
+                        security:
+                          nullable: true
+                          properties:
+                            allowed_hosts:
+                              items:
+                                type: string
+                              nullable: true
+                              type: array
+                            allowed_hosts_are_regex:
+                              nullable: true
+                              type: boolean
+                            content_security_policy:
+                              nullable: true
+                              type: string
+                            content_type_nosniff:
+                              nullable: true
+                              type: boolean
+                            cross_origin_opener_policy:
+                              nullable: true
+                              type: string
+                            enabled:
+                              nullable: true
+                              type: boolean
+                            expect_ct_header:
+                              nullable: true
+                              type: string
+                            hosts_proxy_headers:
+                              items:
+                                type: string
+                              nullable: true
+                              type: array
+                            https_host:
+                              nullable: true
+                              type: string
+                            https_proxy_headers:
+                              items:
+                                properties:
+                                  key:
+                                    type: string
+                                  value:
+                                    type: string
+                                required:
+                                - key
+                                - value
+                                type: object
+                              nullable: true
+                              type: array
+                            https_redirect:
+                              nullable: true
+                              type: boolean
+                            permissions_policy:
+                              nullable: true
+                              type: string
+                            sts_include_subdomains:
+                              nullable: true
+                              type: boolean
+                            sts_preload:
+                              nullable: true
+                              type: boolean
+                            sts_seconds:
+                              format: int64
+                              nullable: true
+                              type: integer
+                          type: object
+                        tls_cipher_suites:
+                          items:
+                            type: string
+                          nullable: true
+                          type: array
+                        web_client_integrations:
+                          items:
+                            properties:
+                              file_extensions:
+                                items:
+                                  type: string
+                                type: array
+                              url:
+                                type: string
+                            required:
+                            - file_extensions
+                            - url
+                            type: object
+                          nullable: true
+                          type: array
+                      type: object
+                    nullable: true
+                    type: array
+                  ca_certificates:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  ca_revocation_lists:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  certificate_file:
+                    nullable: true
+                    type: string
+                  certificate_key_file:
+                    nullable: true
+                    type: string
+                  cors:
+                    nullable: true
+                    properties:
+                      allow_credentials:
+                        nullable: true
+                        type: boolean
+                      allow_private_network:
+                        nullable: true
+                        type: boolean
+                      allowed_headers:
+                        items:
+                          type: string
+                        nullable: true
+                        type: array
+                      allowed_methods:
+                        items:
+                          type: string
+                        nullable: true
+                        type: array
+                      allowed_origins:
+                        items:
+                          type: string
+                        nullable: true
+                        type: array
+                      enabled:
+                        nullable: true
+                        type: boolean
+                      exposed_headers:
+                        items:
+                          type: string
+                        nullable: true
+                        type: array
+                      max_age:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      options_passthrough:
+                        nullable: true
+                        type: boolean
+                      options_success_status:
+                        format: int64
+                        nullable: true
+                        type: integer
+                    type: object
+                  hide_support_link:
+                    nullable: true
+                    type: boolean
+                  max_upload_file_size:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  openapi_path:
+                    nullable: true
+                    type: string
+                  setup:
+                    nullable: true
+                    properties:
+                      installation_code:
+                        nullable: true
+                        type: string
+                      installation_code_hint:
+                        nullable: true
+                        type: string
+                    type: object
+                  signing_passphrase:
+                    nullable: true
+                    type: string
+                  static_files_path:
+                    nullable: true
+                    type: string
+                  templates_path:
+                    nullable: true
+                    type: string
+                  token_validation:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  web_root:
+                    nullable: true
+                    type: string
+                type: object
+              kms:
+                nullable: true
+                properties:
+                  secrets:
+                    nullable: true
+                    properties:
+                      master_key:
+                        nullable: true
+                        type: string
+                      master_key_path:
+                        nullable: true
+                        type: string
+                      url:
+                        nullable: true
+                        type: string
+                    type: object
+                type: object
+              mfa:
+                nullable: true
+                properties:
+                  totp:
+                    items:
+                      properties:
+                        algo:
+                          nullable: true
+                          type: string
+                        issuer:
+                          nullable: true
+                          type: string
+                        name:
+                          nullable: true
+                          type: string
+                      type: object
+                    nullable: true
+                    type: array
+                type: object
+              sftpd:
+                nullable: true
+                properties:
+                  banner:
+                    nullable: true
+                    type: string
+                  bindings:
+                    items:
+                      properties:
+                        address:
+                          nullable: true
+                          type: string
+                        apply_proxy_config:
+                          nullable: true
+                          type: boolean
+                        port:
+                          format: int64
+                          nullable: true
+                          type: integer
+                      type: object
+                    nullable: true
+                    type: array
+                  ciphers:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  enabled_ssh_commands:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  folder_prefix:
+                    nullable: true
+                    type: string
+                  host_certificates:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  host_key_algorithms:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  host_keys:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  kex_algorithms:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  keyboard_interactive_auth_hook:
+                    nullable: true
+                    type: string
+                  keyboard_interactive_authentication:
+                    nullable: true
+                    type: boolean
+                  login_banner_file:
+                    nullable: true
+                    type: string
+                  macs:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  max_auth_tries:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  moduli:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  password_authentication:
+                    nullable: true
+                    type: boolean
+                  revoked_user_certs_file:
+                    nullable: true
+                    type: string
+                  trusted_user_ca_keys:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                type: object
+              smtp:
+                nullable: true
+                properties:
+                  auth_type:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  domain:
+                    nullable: true
+                    type: string
+                  encryption:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  from:
+                    nullable: true
+                    type: string
+                  host:
+                    nullable: true
+                    type: string
+                  password:
+                    nullable: true
+                    type: string
+                  port:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  templates_path:
+                    nullable: true
+                    type: string
+                  user:
+                    nullable: true
+                    type: string
+                type: object
+              telemetry:
+                nullable: true
+                properties:
+                  auth_user_file:
+                    nullable: true
+                    type: string
+                  bind_address:
+                    nullable: true
+                    type: string
+                  bind_port:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  certificate_file:
+                    nullable: true
+                    type: string
+                  certificate_key_file:
+                    nullable: true
+                    type: string
+                  enable_profiler:
+                    nullable: true
+                    type: boolean
+                  min_tls_version:
+                    format: int64
+                    nullable: true
+                    type: integer
+                  tls_cipher_suites:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                type: object
+              webdavd:
+                nullable: true
+                properties:
+                  bindings:
+                    items:
+                      properties:
+                        address:
+                          nullable: true
+                          type: string
+                        certificate_file:
+                          nullable: true
+                          type: string
+                        certificate_key_file:
+                          nullable: true
+                          type: string
+                        client_auth_type:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        client_ip_header_depth:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        client_ip_proxy_header:
+                          nullable: true
+                          type: string
+                        disable_www_auth_header:
+                          nullable: true
+                          type: boolean
+                        enable_https:
+                          nullable: true
+                          type: boolean
+                        min_tls_version:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        port:
+                          format: int64
+                          nullable: true
+                          type: integer
+                        prefix:
+                          nullable: true
+                          type: string
+                        proxy_allowed:
+                          items:
+                            type: string
+                          nullable: true
+                          type: array
+                        tls_cipher_suites:
+                          items:
+                            type: string
+                          nullable: true
+                          type: array
+                      type: object
+                    nullable: true
+                    type: array
+                  ca_certificates:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  ca_revocation_lists:
+                    items:
+                      type: string
+                    nullable: true
+                    type: array
+                  cache:
+                    nullable: true
+                    properties:
+                      mime_types:
+                        nullable: true
+                        properties:
+                          custom_mappings:
+                            items:
+                              properties:
+                                ext:
+                                  type: string
+                                mime:
+                                  type: string
+                              required:
+                              - ext
+                              - mime
+                              type: object
+                            nullable: true
+                            type: array
+                          enabled:
+                            nullable: true
+                            type: boolean
+                          max_size:
+                            format: int64
+                            nullable: true
+                            type: integer
+                        type: object
+                      users:
+                        nullable: true
+                        properties:
+                          expiration_time:
+                            format: int64
+                            nullable: true
+                            type: integer
+                          max_size:
+                            format: int64
+                            nullable: true
+                            type: integer
+                        type: object
+                    type: object
+                  certificate_file:
+                    nullable: true
+                    type: string
+                  certificate_key_file:
+                    nullable: true
+                    type: string
+                  cors:
+                    nullable: true
+                    properties:
+                      allow_credentials:
+                        nullable: true
+                        type: boolean
+                      allow_private_network:
+                        nullable: true
+                        type: boolean
+                      allowed_headers:
+                        items:
+                          type: string
+                        nullable: true
+                        type: array
+                      allowed_methods:
+                        items:
+                          type: string
+                        nullable: true
+                        type: array
+                      allowed_origins:
+                        items:
+                          type: string
+                        nullable: true
+                        type: array
+                      enabled:
+                        nullable: true
+                        type: boolean
+                      exposed_headers:
+                        items:
+                          type: string
+                        nullable: true
+                        type: array
+                      max_age:
+                        format: int64
+                        nullable: true
+                        type: integer
+                      options_passthrough:
+                        nullable: true
+                        type: boolean
+                      options_success_status:
+                        format: int64
+                        nullable: true
+                        type: integer
+                    type: object
+                type: object
             type: object
         required:
         - spec

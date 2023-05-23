@@ -1,4 +1,3 @@
-use crate::consts::GROUP;
 use k8s_openapi::NamespaceResourceScope;
 use kube::api::{Patch, PatchParams};
 use kube::{Api, Client, Error, Resource};
@@ -15,11 +14,12 @@ where
     TResource: Resource<Scope = NamespaceResourceScope> + Clone + DeserializeOwned + Debug,
     <TResource as Resource>::DynamicType: Default,
 {
+    debug!("Adding finalizer to {namespace}/{name}");
     let api = Api::namespaced(client, namespace);
 
     let finalizer = json!({
         "metadata": {
-            "finalizers": [format!("{}/finalizer", GROUP)]
+            "finalizers": ["sftpgo.zlepper.dk/finalizer"]
         }
     });
 
@@ -36,6 +36,7 @@ where
     TResource: Resource<Scope = NamespaceResourceScope> + Clone + DeserializeOwned + Debug,
     <TResource as Resource>::DynamicType: Default,
 {
+    debug!("Deleting finalizer from {namespace}/{name}");
     let api = Api::namespaced(client, namespace);
     let finalizer = json!({
         "metadata": {

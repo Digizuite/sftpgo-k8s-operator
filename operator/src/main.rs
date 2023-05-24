@@ -1,12 +1,13 @@
 mod finalizers;
 mod reconciler;
 mod sftpgo_server_reconciler;
+mod viper_environment_serializer;
 
 extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
-use crate::reconciler::{make_reconciler, ContextData};
+use crate::reconciler::{ContextData, make_reconciler};
 use crate::sftpgo_server_reconciler::reconcile_sftpgo_server;
 use kube::client::Client;
 

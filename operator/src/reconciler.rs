@@ -1,3 +1,4 @@
+use crate::viper_environment_serializer::ViperEnvironmentSerializerError;
 use futures::stream::StreamExt;
 use futures::TryFuture;
 use kube::runtime::controller::Action;
@@ -59,6 +60,12 @@ pub enum Error {
     KubeError {
         #[from]
         source: kube::Error,
+    },
+
+    #[error("Viper serializer reported error: {source}")]
+    ViperSerializerError {
+        #[from]
+        source: ViperEnvironmentSerializerError,
     },
 
     /// Error in user input or resource definition, typically missing fields.

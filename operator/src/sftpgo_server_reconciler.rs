@@ -1,11 +1,13 @@
 use crate::reconciler::Error;
+use crate::viper_environment_serializer::ViperEnvironmentSerializer;
 use crate::{default, finalizers, ContextData};
 use crds::{SftpgoServer, SftpgoServerSpec};
 use k8s_openapi::api::apps::v1::{Deployment, DeploymentSpec};
-use k8s_openapi::api::core::v1::{Container, PodSpec, PodTemplateSpec};
+use k8s_openapi::api::core::v1::{Container, EnvVar, PodSpec, PodTemplateSpec};
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::{LabelSelector, ObjectMeta};
 use kube::runtime::controller::Action;
 use kube::{Api, Client, ResourceExt};
+use serde::Serialize;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -78,12 +80,27 @@ async fn deploy(
     annotations.insert("managed_by".to_string(), "sftpgo-operator".to_string());
     annotations.insert("managed_by_resource".to_string(), name.to_string());
 
+    let mut env_serializer = ViperEnvironmentSerializer::new_with_prefix("SFTPGO_".to_string());
+    resource.configuration.serialize(&mut env_serializer)?;
+
+    let expected_container = Container {
+        name: "sftpgo".to_string(),
+        image: Some(image.to_string()),
+        env: Some(
+            env_serializer
+                .values
+                .into_iter()
+                .map(|p| EnvVar {
+                    name: p.key,
+                    value: Some(p.value),
+                    value_from: None,
+                })
+                .collect(),
+        ),
+        ..default()
+    };
     let expected_pod_spec = PodSpec {
-        containers: vec![Container {
-            name: "sftpgo".to_string(),
-            image: Some(image.to_string()),
-            ..default()
-        }],
+        containers: vec![expected_container.clone()],
         ..default()
     };
     let expected = Deployment {
@@ -130,6 +147,10 @@ async fn deploy(
 
                     if container.image.as_deref() != Some(image) {
                         container.image = Some(image.to_string());
+                    }
+
+                    if container.env != expected_container.env {
+                        container.env = expected_container.env;
                     }
                 }
             } else {

@@ -4,5 +4,9 @@ metadata:
   name: sftpgo
 spec:
   replicas: 1
+  configuration:
+    httpd:
+      bindings:
+        - port: 8383
 
 

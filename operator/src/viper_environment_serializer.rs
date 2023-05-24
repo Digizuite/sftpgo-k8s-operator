@@ -4,7 +4,7 @@ use std::iter;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum Error {
+pub enum ViperEnvironmentSerializerError {
     #[error("Byte array is not supported")]
     ByteArrayNotSupported,
 
@@ -18,7 +18,7 @@ pub enum Error {
     SerializeError(String),
 }
 
-impl ser::Error for Error {
+impl ser::Error for ViperEnvironmentSerializerError {
     fn custom<T>(msg: T) -> Self
     where
         T: Display,
@@ -27,9 +27,24 @@ impl ser::Error for Error {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub struct ValuePair {
+    pub key: String,
+    pub value: String,
+}
+
+impl ValuePair {
+    fn new(key: &str, value: &str) -> Self {
+        Self {
+            key: key.to_string(),
+            value: value.to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct ViperEnvironmentSerializer {
-    pub values: Vec<String>,
+    pub values: Vec<ValuePair>,
     prefix: Option<String>,
     field_stack: Vec<ViperEnvironmentSerializerStackElement>,
 }
@@ -71,7 +86,7 @@ fn build_field_stack_state_error(
     field_stack: &[ViperEnvironmentSerializerStackElement],
     tail: Option<ViperEnvironmentSerializerStackElement>,
     expected: ViperEnvironmentSerializerStackElement,
-) -> Error {
+) -> ViperEnvironmentSerializerError {
     let ve = field_stack
         .iter()
         .map(Some)
@@ -79,7 +94,7 @@ fn build_field_stack_state_error(
         .map(|i| i.cloned())
         .collect();
 
-    Error::InvalidStack(expected, ve)
+    ViperEnvironmentSerializerError::InvalidStack(expected, ve)
 }
 
 impl ViperEnvironmentSerializer {
@@ -111,7 +126,7 @@ impl ViperEnvironmentSerializer {
         }
 
         if let Some(prefix) = &self.prefix {
-            format!("{}__{}", prefix, key)
+            format!("{}{}", prefix, key)
         } else {
             key
         }
@@ -120,15 +135,16 @@ impl ViperEnvironmentSerializer {
     fn add_value(&mut self, v: impl Display) {
         let key = self.get_key();
 
-        let pair = format!("{key}={v}");
-
-        self.values.push(pair);
+        self.values.push(ValuePair {
+            key,
+            value: v.to_string(),
+        });
     }
 }
 
 impl<'a> ser::Serializer for &'a mut ViperEnvironmentSerializer {
     type Ok = ();
-    type Error = Error;
+    type Error = ViperEnvironmentSerializerError;
     type SerializeSeq = Self;
     type SerializeTuple = Self;
     type SerializeTupleStruct = Self;
@@ -203,7 +219,7 @@ impl<'a> ser::Serializer for &'a mut ViperEnvironmentSerializer {
     }
 
     fn serialize_bytes(self, _v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        Err(Error::ByteArrayNotSupported)
+        Err(ViperEnvironmentSerializerError::ByteArrayNotSupported)
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
@@ -312,7 +328,7 @@ impl<'a> ser::Serializer for &'a mut ViperEnvironmentSerializer {
 
 impl<'a> ser::SerializeSeq for &'a mut ViperEnvironmentSerializer {
     type Ok = ();
-    type Error = Error;
+    type Error = ViperEnvironmentSerializerError;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
@@ -349,7 +365,7 @@ impl<'a> ser::SerializeSeq for &'a mut ViperEnvironmentSerializer {
 
 impl<'a> ser::SerializeTuple for &'a mut ViperEnvironmentSerializer {
     type Ok = ();
-    type Error = Error;
+    type Error = ViperEnvironmentSerializerError;
 
     fn serialize_element<T: ?Sized>(&mut self, _value: &T) -> Result<(), Self::Error>
     where
@@ -365,7 +381,7 @@ impl<'a> ser::SerializeTuple for &'a mut ViperEnvironmentSerializer {
 
 impl<'a> ser::SerializeTupleStruct for &'a mut ViperEnvironmentSerializer {
     type Ok = ();
-    type Error = Error;
+    type Error = ViperEnvironmentSerializerError;
 
     fn serialize_field<T: ?Sized>(&mut self, _value: &T) -> Result<(), Self::Error>
     where
@@ -381,7 +397,7 @@ impl<'a> ser::SerializeTupleStruct for &'a mut ViperEnvironmentSerializer {
 
 impl<'a> ser::SerializeTupleVariant for &'a mut ViperEnvironmentSerializer {
     type Ok = ();
-    type Error = Error;
+    type Error = ViperEnvironmentSerializerError;
 
     fn serialize_field<T: ?Sized>(&mut self, _value: &T) -> Result<(), Self::Error>
     where
@@ -397,7 +413,7 @@ impl<'a> ser::SerializeTupleVariant for &'a mut ViperEnvironmentSerializer {
 
 impl<'a> ser::SerializeMap for &'a mut ViperEnvironmentSerializer {
     type Ok = ();
-    type Error = Error;
+    type Error = ViperEnvironmentSerializerError;
 
     fn serialize_key<T: ?Sized>(&mut self, _key: &T) -> Result<(), Self::Error>
     where
@@ -432,7 +448,7 @@ impl<'a> ser::SerializeMap for &'a mut ViperEnvironmentSerializer {
 
 impl<'a> ser::SerializeStruct for &'a mut ViperEnvironmentSerializer {
     type Ok = ();
-    type Error = Error;
+    type Error = ViperEnvironmentSerializerError;
 
     fn serialize_field<T: ?Sized>(
         &mut self,
@@ -471,7 +487,7 @@ impl<'a> ser::SerializeStruct for &'a mut ViperEnvironmentSerializer {
 
 impl<'a> ser::SerializeStructVariant for &'a mut ViperEnvironmentSerializer {
     type Ok = ();
-    type Error = Error;
+    type Error = ViperEnvironmentSerializerError;
 
     fn serialize_field<T: ?Sized>(
         &mut self,
@@ -528,11 +544,53 @@ mod tests {
         assert_eq!(
             serializer.values,
             vec![
-                "NAME=John".to_string(),
-                "AGE=32".to_string(),
-                "IS_ACTIVE=true".to_string(),
-                "OPTIONAL=a value".to_string(),
-                "AN_ENUM=Second".to_string(),
+                ValuePair::new("NAME", "John"),
+                ValuePair::new("AGE", "32"),
+                ValuePair::new("IS_ACTIVE", "true"),
+                ValuePair::new("OPTIONAL", "a value"),
+                ValuePair::new("AN_ENUM", "Second"),
+            ]
+        );
+    }
+
+    #[test]
+    fn simple_values_with_prefix() {
+        #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+        pub struct SomeObject {
+            pub name: String,
+            pub age: u32,
+            pub is_active: bool,
+            pub optional: Option<String>,
+            pub optional2: Option<String>,
+            pub an_enum: AnEnum,
+        }
+
+        #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+        pub enum AnEnum {
+            #[default]
+            First,
+            Second,
+            Third,
+        }
+
+        let mut serializer = ViperEnvironmentSerializer::new_with_prefix("PREFIX_".to_string());
+        let value = SomeObject {
+            name: "John".to_string(),
+            age: 32,
+            is_active: true,
+            optional: Some("a value".to_string()),
+            optional2: None,
+            an_enum: AnEnum::Second,
+        };
+        value.serialize(&mut serializer).unwrap();
+        assert_eq!(
+            serializer.values,
+            vec![
+                ValuePair::new("PREFIX_NAME", "John"),
+                ValuePair::new("PREFIX_AGE", "32"),
+                ValuePair::new("PREFIX_IS_ACTIVE", "true"),
+                ValuePair::new("PREFIX_OPTIONAL", "a value"),
+                ValuePair::new("PREFIX_AN_ENUM", "Second"),
             ]
         );
     }
@@ -552,8 +610,8 @@ mod tests {
         assert_eq!(
             serializer.values,
             vec![
-                "STRING_LIST__0=a".to_string(),
-                "STRING_LIST__1=b".to_string(),
+                ValuePair::new("STRING_LIST__0", "a"),
+                ValuePair::new("STRING_LIST__1", "b"),
             ]
         );
     }
@@ -575,7 +633,10 @@ mod tests {
             nested: NestedObject { something: 42 },
         };
         value.serialize(&mut serializer).unwrap();
-        assert_eq!(serializer.values, vec!["NESTED__SOMETHING=42".to_string(),]);
+        assert_eq!(
+            serializer.values,
+            vec![ValuePair::new("NESTED__SOMETHING", "42"),]
+        );
     }
 
     #[test]
@@ -601,8 +662,8 @@ mod tests {
         assert_eq!(
             serializer.values,
             vec![
-                "NESTED_LIST__0__SOMETHING=1".to_string(),
-                "NESTED_LIST__1__SOMETHING=2".to_string(),
+                ValuePair::new("NESTED_LIST__0__SOMETHING", "1"),
+                ValuePair::new("NESTED_LIST__1__SOMETHING", "2"),
             ]
         );
     }
@@ -661,17 +722,17 @@ mod tests {
         assert_eq!(
             serializer.values,
             vec![
-                "NAME=John".to_string(),
-                "AGE=32".to_string(),
-                "IS_ACTIVE=true".to_string(),
-                "OPTIONAL=a value".to_string(),
-                "AN_ENUM=Second".to_string(),
-                "STRING_LIST__0=a".to_string(),
-                "STRING_LIST__1=b".to_string(),
-                "NESTED__SOMETHING=42".to_string(),
-                "NESTED_LIST__0__SOMETHING=1".to_string(),
-                "NESTED_LIST__1__SOMETHING=2".to_string(),
-                "SOMETHING_ELSE=3.1415927".to_string(),
+                ValuePair::new("NAME", "John"),
+                ValuePair::new("AGE", "32"),
+                ValuePair::new("IS_ACTIVE", "true"),
+                ValuePair::new("OPTIONAL", "a value"),
+                ValuePair::new("AN_ENUM", "Second"),
+                ValuePair::new("STRING_LIST__0", "a"),
+                ValuePair::new("STRING_LIST__1", "b"),
+                ValuePair::new("NESTED__SOMETHING", "42"),
+                ValuePair::new("NESTED_LIST__0__SOMETHING", "1"),
+                ValuePair::new("NESTED_LIST__1__SOMETHING", "2"),
+                ValuePair::new("SOMETHING_ELSE", "3.1415927"),
             ]
         );
     }

@@ -1,8 +1,8 @@
-use crds::Server;
+use crds::SftpgoServer;
 use kube::CustomResourceExt;
 
 fn main() {
-    write_crd::<Server>()
+    write_crd::<SftpgoServer>()
 }
 
 fn write_crd<TResource: CustomResourceExt>() {

@@ -587,16 +587,8 @@ pub struct Smtp {
     pub templates_path: Option<String>,
 }
 
-#[derive(CustomResource, Serialize, Deserialize, Debug, PartialEq, Clone, JsonSchema)]
-#[kube(
-    group = "sftpgo.zlepper.dk",
-    version = "v1alpha1",
-    kind = "Server",
-    plural = "servers",
-    derive = "PartialEq",
-    namespaced
-)]
-pub struct ServerSpec {
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct SftpgoConfiguration {
     pub common: Option<Common>,
     pub acme: Option<Acme>,
     pub sftpd: Option<Sftpd>,
@@ -610,4 +602,19 @@ pub struct ServerSpec {
     pub kms: Option<Kms>,
     pub mfa: Option<Mfa>,
     pub smtp: Option<Smtp>,
+}
+
+#[derive(CustomResource, Serialize, Deserialize, Debug, PartialEq, Clone, JsonSchema)]
+#[kube(
+    group = "sftpgo.zlepper.dk",
+    version = "v1alpha1",
+    kind = "SftpgoServer",
+    plural = "sftpgoservers",
+    derive = "PartialEq",
+    namespaced
+)]
+pub struct SftpgoServerSpec {
+    pub configuration: Option<SftpgoConfiguration>,
+    pub replicas: Option<u32>,
+    pub image: Option<String>,
 }

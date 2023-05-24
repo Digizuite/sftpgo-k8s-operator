@@ -27,7 +27,7 @@ where
     api.patch(name, &PatchParams::default(), &patch).await
 }
 
-pub async fn delete_finalizer<TResource>(
+pub async fn remove_finalizer<TResource>(
     client: Client,
     name: &str,
     namespace: &str,

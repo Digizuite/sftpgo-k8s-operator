@@ -615,6 +615,6 @@ pub struct SftpgoConfiguration {
 )]
 pub struct SftpgoServerSpec {
     pub configuration: Option<SftpgoConfiguration>,
-    pub replicas: Option<u32>,
+    pub replicas: Option<i32>,
     pub image: Option<String>,
 }

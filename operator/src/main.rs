@@ -10,6 +10,10 @@ use crate::reconciler::{make_reconciler, ContextData};
 use crate::sftpgo_server_reconciler::reconcile_sftpgo_server;
 use kube::client::Client;
 
+pub fn default<T: Default>() -> T {
+    Default::default()
+}
+
 #[tokio::main]
 async fn main() {
     pretty_env_logger::init_timed();

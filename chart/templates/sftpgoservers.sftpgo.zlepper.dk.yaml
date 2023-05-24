@@ -1379,8 +1379,7 @@ spec:
                 nullable: true
                 type: string
               replicas:
-                format: uint32
-                minimum: 0.0
+                format: int32
                 nullable: true
                 type: integer
             type: object

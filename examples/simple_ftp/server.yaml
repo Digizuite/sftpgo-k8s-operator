@@ -2,6 +2,7 @@ apiVersion: sftpgo.zlepper.dk/v1alpha1
 kind: SftpgoServer
 metadata:
   name: sftpgo
-spec: { }
+spec:
+  replicas: 1
 
 

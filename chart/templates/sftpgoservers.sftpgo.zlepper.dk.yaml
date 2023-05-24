@@ -1378,6 +1378,11 @@ spec:
               image:
                 nullable: true
                 type: string
+              labels:
+                additionalProperties:
+                  type: string
+                nullable: true
+                type: object
               replicas:
                 format: int32
                 nullable: true

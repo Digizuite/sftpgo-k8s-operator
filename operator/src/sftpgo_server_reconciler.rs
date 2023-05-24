@@ -73,7 +73,7 @@ async fn deploy(
 
     let deployments_api: Api<Deployment> = Api::namespaced(client, namespace);
 
-    let mut labels = BTreeMap::new();
+    let mut labels = resource.labels.clone().unwrap_or_default();
     labels.insert("app".to_string(), name.to_string());
 
     let mut annotations = BTreeMap::new();

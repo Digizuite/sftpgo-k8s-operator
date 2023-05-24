@@ -4,6 +4,8 @@ metadata:
   name: sftpgo
 spec:
   replicas: 1
+  labels:
+    my_label: rhdh
   configuration:
     httpd:
       bindings:

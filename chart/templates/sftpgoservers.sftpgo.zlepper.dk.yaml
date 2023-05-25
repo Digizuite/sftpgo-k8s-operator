@@ -830,7 +830,7 @@ spec:
                                   type: string
                               type: object
                             port:
-                              format: int64
+                              format: int32
                               nullable: true
                               type: integer
                             proxy_allowed:

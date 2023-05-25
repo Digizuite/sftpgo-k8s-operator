@@ -33,6 +33,7 @@ pub struct ValuePair {
     pub value: String,
 }
 
+#[cfg(test)]
 impl ValuePair {
     fn new(key: &str, value: &str) -> Self {
         Self {

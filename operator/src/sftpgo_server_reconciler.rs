@@ -2,9 +2,13 @@ use crate::reconciler::Error;
 use crate::viper_environment_serializer::ViperEnvironmentSerializer;
 use crate::{default, finalizers, ContextData};
 use crds::{SftpgoServer, SftpgoServerSpec};
+use futures::StreamExt;
 use k8s_openapi::api::apps::v1::{Deployment, DeploymentSpec};
-use k8s_openapi::api::core::v1::{Container, EnvVar, PodSpec, PodTemplateSpec};
+use k8s_openapi::api::core::v1::{
+    Container, ContainerPort, EnvVar, PodSpec, PodTemplateSpec, Service, ServicePort, ServiceSpec,
+};
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::{LabelSelector, ObjectMeta};
+use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
 use kube::runtime::controller::Action;
 use kube::{Api, Client, ResourceExt};
 use serde::Serialize;
@@ -71,7 +75,8 @@ async fn deploy(
 
     let deployment_name = format!("{}-deployment", name);
 
-    let deployments_api: Api<Deployment> = Api::namespaced(client, namespace);
+    let deployments_api: Api<Deployment> = Api::namespaced(client.clone(), namespace);
+    let service_api: Api<Service> = Api::namespaced(client, namespace);
 
     let mut labels = resource.labels.clone().unwrap_or_default();
     labels.insert("app".to_string(), name.to_string());
@@ -82,6 +87,24 @@ async fn deploy(
 
     let mut env_serializer = ViperEnvironmentSerializer::new_with_prefix("SFTPGO_".to_string());
     resource.configuration.serialize(&mut env_serializer)?;
+
+    let mut expected_ports = vec![];
+
+    if let Some(resource_configuration) = &resource.configuration {
+        if let Some(httpd_config) = &resource_configuration.httpd {
+            if let Some(httpd_bindings) = &httpd_config.bindings {
+                for http_biding in httpd_bindings {
+                    let port_number = http_biding.port.unwrap_or(8080);
+                    let port_name = format!("http-{}", port_number);
+                    expected_ports.push(ContainerPort {
+                        name: Some(port_name),
+                        container_port: port_number,
+                        ..default()
+                    });
+                }
+            }
+        }
+    }
 
     let expected_container = Container {
         name: "sftpgo".to_string(),
@@ -97,13 +120,14 @@ async fn deploy(
                 })
                 .collect(),
         ),
+        ports: Some(expected_ports.clone()),
         ..default()
     };
     let expected_pod_spec = PodSpec {
         containers: vec![expected_container.clone()],
         ..default()
     };
-    let expected = Deployment {
+    let expected_deployment = Deployment {
         metadata: ObjectMeta {
             name: Some(deployment_name.clone()),
             namespace: Some(namespace.to_string()),
@@ -129,6 +153,31 @@ async fn deploy(
         ..default()
     };
 
+    let expected_service_ports: Vec<ServicePort> = expected_ports
+        .iter()
+        .map(|p| ServicePort {
+            name: p.name.clone(),
+            protocol: p.protocol.clone(),
+            port: p.container_port,
+            target_port: p.name.as_ref().map(|n| IntOrString::String(n.clone())),
+            ..default()
+        })
+        .collect();
+
+    let expected_service = Service {
+        metadata: ObjectMeta {
+            name: Some(name.to_string()),
+            namespace: Some(namespace.to_string()),
+            ..default()
+        },
+        spec: Some(ServiceSpec {
+            selector: Some(labels.clone()),
+            ports: Some(expected_service_ports.clone()),
+            ..default()
+        }),
+        ..default()
+    };
+
     if let Some(existing) = deployments_api.get_opt(&deployment_name).await? {
         debug!("Deployment {namespace}/{deployment_name} already exists");
 
@@ -140,7 +189,7 @@ async fn deploy(
             }
 
             if let Some(ref mut pod_spec) = &mut spec.template.spec {
-                if pod_spec.containers.len() != 1 {
+                if pod_spec.containers.is_empty() {
                     pod_spec.containers = expected_pod_spec.containers;
                 } else {
                     let container = &mut pod_spec.containers[0];
@@ -152,12 +201,16 @@ async fn deploy(
                     if container.env != expected_container.env {
                         container.env = expected_container.env;
                     }
+
+                    if container.ports != expected_container.ports {
+                        container.ports = expected_container.ports;
+                    }
                 }
             } else {
                 spec.template.spec = Some(expected_pod_spec.clone());
             }
         } else {
-            copy.spec = expected.spec;
+            copy.spec = expected_deployment.spec;
         }
 
         if copy != existing {
@@ -172,7 +225,41 @@ async fn deploy(
     } else {
         debug!("Deployment {namespace}/{deployment_name} does not exist, creating");
 
-        deployments_api.create(&default(), &expected).await?;
+        deployments_api
+            .create(&default(), &expected_deployment)
+            .await?;
+    }
+
+    if let Some(existing) = service_api.get_opt(name).await? {
+        debug!("Service {namespace}/{name} already exists");
+
+        let mut copy = existing.clone();
+
+        if let Some(ref mut spec) = &mut copy.spec {
+            if let Some(ref mut ports) = &mut spec.ports {
+                if ports != &expected_service_ports {
+                    *ports = expected_service_ports;
+                }
+            } else {
+                spec.ports = Some(expected_service_ports);
+            }
+        } else {
+            copy.spec = expected_service.spec;
+        }
+
+        if copy != existing {
+            debug!("Service {namespace}/{name} has changed, updating");
+            service_api.replace(name, &default(), &copy).await?;
+            debug!("Service {namespace}/{name} updated")
+        } else {
+            debug!("Service {namespace}/{name} has not changed, skipping")
+        }
+    } else {
+        debug!("Service {namespace}/{name} does not exist, creating");
+
+        service_api.create(&default(), &expected_service).await?;
+
+        debug!("Service {namespace}/{name} created")
     }
 
     Ok(())

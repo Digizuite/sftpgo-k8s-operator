@@ -377,7 +377,7 @@ pub struct Httpd {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct HttpdBinding {
-    pub port: Option<i64>,
+    pub port: Option<i32>,
     pub address: Option<String>,
     pub enable_web_admin: Option<bool>,
     pub enable_web_client: Option<bool>,

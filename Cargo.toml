@@ -2,5 +2,6 @@
 members = [
     "operator",
     "crds",
-    "schema_generator"
+    "schema_generator",
+    "sftpgo-client",
 ]

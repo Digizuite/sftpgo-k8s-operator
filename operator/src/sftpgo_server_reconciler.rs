@@ -9,6 +9,7 @@ use k8s_openapi::api::core::v1::{
 };
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::{LabelSelector, ObjectMeta, OwnerReference};
 use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
+use k8s_openapi::url::quirks::port;
 use kube::runtime::controller::Action;
 use kube::{Api, Client, Resource, ResourceExt};
 use rand::distributions::{Alphanumeric, DistString};
@@ -145,7 +146,7 @@ async fn ensure_service(
         .iter()
         .map(|p| ServicePort {
             name: p.name.clone(),
-            protocol: p.protocol.clone(),
+            protocol: p.protocol.clone().or(Some("TCP".to_string())),
             port: p.container_port,
             target_port: p.name.as_ref().map(|n| IntOrString::String(n.clone())),
             ..default()
@@ -174,9 +175,22 @@ async fn ensure_service(
 
         if let Some(ref mut spec) = &mut copy.spec {
             if let Some(ref mut ports) = &mut spec.ports {
-                if ports != &expected_service_ports {
-                    *ports = expected_service_ports;
+                // Iterate expected ports and update existing ports
+                for expected_port in expected_service_ports.iter() {
+                    if let Some(existing_port) =
+                        ports.iter_mut().find(|p| p.name == expected_port.name)
+                    {
+                        existing_port.protocol = expected_port.protocol.clone();
+                        existing_port.port = expected_port.port;
+                        existing_port.target_port = expected_port.target_port.clone();
+                    } else {
+                        debug!("Port {:?} not found, adding", &expected_port.name);
+                        ports.push(expected_port.clone());
+                    }
                 }
+
+                // Remove ports that are not in the expected ports
+                ports.retain(|p| expected_service_ports.iter().any(|ep| ep.name == p.name));
             } else {
                 spec.ports = Some(expected_service_ports);
             }
@@ -184,7 +198,7 @@ async fn ensure_service(
             copy.spec = expected_service.spec;
         }
 
-        if copy != existing {
+        if copy.spec != existing.spec {
             debug!("Service {namespace}/{name} has changed, updating");
             service_api.replace(name, &default(), &copy).await?;
             debug!("Service {namespace}/{name} updated")

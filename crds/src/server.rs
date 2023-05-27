@@ -270,7 +270,6 @@ pub struct DataProvider {
     pub password_validation: Option<PasswordValidation>,
     pub password_caching: Option<bool>,
     pub update_mode: Option<i64>,
-    pub create_default_admin: Option<bool>,
     pub naming_rules: Option<i64>,
     pub is_shared: Option<i64>,
     pub node: Option<Node>,
@@ -371,7 +370,6 @@ pub struct Httpd {
     pub token_validation: Option<i64>,
     pub max_upload_file_size: Option<i64>,
     pub cors: Option<HttpdCors>,
-    pub setup: Option<Setup>,
     pub hide_support_link: Option<bool>,
 }
 
@@ -490,12 +488,6 @@ pub struct HttpdCors {
     pub options_passthrough: Option<bool>,
     pub options_success_status: Option<i64>,
     pub allow_private_network: Option<bool>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
-pub struct Setup {
-    pub installation_code: Option<String>,
-    pub installation_code_hint: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]

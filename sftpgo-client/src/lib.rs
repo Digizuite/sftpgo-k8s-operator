@@ -1,14 +1,13 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+mod admin_token;
+mod auth;
+mod client;
+mod error_response;
+mod users;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub use admin_token::{AdminAccessToken, AdminAccessTokenClient};
+pub use client::SftpgoClient;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+mod prelude {
+    pub(crate) use crate::admin_token::AdminAccessTokenClient;
+    pub(crate) use crate::client::SftpgoClient;
 }

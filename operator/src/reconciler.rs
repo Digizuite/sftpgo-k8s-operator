@@ -25,7 +25,7 @@ pub async fn make_reconciler<TResource, ReconcilerFut, ReconcilerFn>(
 
     let crd_api = Api::all(kubernetes_client.clone());
     let context = Arc::new(ContextData {
-        client: kubernetes_client.clone(),
+        kubernetes_client: kubernetes_client.clone(),
     });
 
     Controller::new(crd_api.clone(), Config::default())
@@ -49,7 +49,7 @@ fn error_policy<TResource: Debug>(
 }
 
 pub struct ContextData {
-    pub client: Client,
+    pub kubernetes_client: Client,
 }
 
 /// All errors possible to occur during reconciliation
@@ -57,18 +57,18 @@ pub struct ContextData {
 pub enum Error {
     /// Any error originating from the `kube-rs` crate
     #[error("Kubernetes reported error: {source}")]
-    KubeError {
+    Kube {
         #[from]
         source: kube::Error,
     },
 
     #[error("Viper serializer reported error: {source}")]
-    ViperSerializerError {
+    ViperSerializer {
         #[from]
         source: ViperEnvironmentSerializerError,
     },
 
     /// Error in user input or resource definition, typically missing fields.
     #[error("Invalid CRD: {0}")]
-    UserInputError(&'static str),
+    UserInput(&'static str),
 }

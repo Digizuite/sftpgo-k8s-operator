@@ -335,9 +335,6 @@ spec:
                       connection_string:
                         nullable: true
                         type: string
-                      create_default_admin:
-                        nullable: true
-                        type: boolean
                       delayed_quota_update:
                         format: int64
                         nullable: true
@@ -998,16 +995,6 @@ spec:
                       openapi_path:
                         nullable: true
                         type: string
-                      setup:
-                        nullable: true
-                        properties:
-                          installation_code:
-                            nullable: true
-                            type: string
-                          installation_code_hint:
-                            nullable: true
-                            type: string
-                        type: object
                       signing_passphrase:
                         nullable: true
                         type: string

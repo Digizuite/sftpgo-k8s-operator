@@ -3,6 +3,7 @@ use crate::client::SftpgoClientBase;
 use crate::error_response::{handle_response, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use log::debug;
 use reqwest::header::AUTHORIZATION;
 use serde::Deserialize;
 use std::sync::Arc;
@@ -69,7 +70,9 @@ where
             client,
             token: Arc::new(RwLock::new(StoredAccessToken {
                 access_token: initial_token.access_token,
-                expires_at: initial_token.expires_at - chrono::Duration::seconds(30),
+                expires_at: initial_token
+                    .expires_at
+                    .min(Utc::now() + chrono::Duration::seconds(30)),
             })),
         };
 
@@ -97,7 +100,7 @@ where
             }
         }
 
-        // So the token is expired or doesn't exist, so we need to refresh it
+        debug!("Token is expired, so we need to refresh it");
         {
             // Lock access to avoid a stampede
             let mut token = self.token.write().await;
@@ -117,7 +120,9 @@ where
 
             *token = StoredAccessToken {
                 access_token: new_token.access_token,
-                expires_at: new_token.expires_at - chrono::Duration::seconds(30),
+                expires_at: new_token
+                    .expires_at
+                    .min(Utc::now() + chrono::Duration::seconds(30)),
             };
 
             return Ok(header_value);

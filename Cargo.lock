@@ -1468,6 +1468,7 @@ dependencies = [
  "async-trait",
  "base64 0.21.1",
  "chrono",
+ "log",
  "reqwest",
  "serde",
  "serde_json",

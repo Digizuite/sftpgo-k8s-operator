@@ -12,15 +12,17 @@ use std::hash::Hash;
 use std::sync::Arc;
 use std::time::Duration;
 
-pub async fn make_reconciler<TResource, ReconcilerFut, ReconcilerFn>(
+pub async fn make_reconciler<TResource, ReconcilerFut, ReconcilerFn, CustomizeFn>(
     kubernetes_client: Client,
     recon: ReconcilerFn,
+    customize_controller: CustomizeFn,
 ) where
     TResource:
         Clone + Resource + CustomResourceExt + DeserializeOwned + Debug + Send + Sync + 'static,
     TResource::DynamicType: Debug + Unpin + Eq + Hash + Clone + Default,
     ReconcilerFn: FnMut(Arc<TResource>, Arc<ContextData>) -> ReconcilerFut,
     ReconcilerFut: TryFuture<Ok = Action, Error = Error> + Send + 'static,
+    CustomizeFn: FnOnce(Controller<TResource>) -> Controller<TResource>,
 {
     info!("Starting reconciler for {:#?}", TResource::crd_name());
 
@@ -30,7 +32,12 @@ pub async fn make_reconciler<TResource, ReconcilerFut, ReconcilerFn>(
         sftpgo_client: SftpgoMultiClient::new(),
     });
 
-    Controller::new(crd_api.clone(), Config::default())
+    let mut controller_setup: Controller<TResource> =
+        Controller::new(crd_api.clone(), Config::default());
+
+    controller_setup = customize_controller(controller_setup);
+
+    controller_setup
         .run(recon, error_policy, context)
         .for_each(|res| async move {
             match res {

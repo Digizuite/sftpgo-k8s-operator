@@ -12,30 +12,28 @@ spec:
         - port: 8383
 
 ---
-apiVersion: sftpgo.zlepper.dk/v1alpha1
-kind: SftpgoUser
-metadata:
-  name: sftpgo-user
-spec:
-  configuration:
-    username: sftpgo-user-but-better
-    password: sftpgo-user
-    enabled: Enabled
-    globalPermissions:
-    - all
-  sftpgoServerReference:
-      connectionSecret:
-        name: sftpgo-admin-user-local
-        namespace: default
-
----
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: sftpgo-admin-user-local
-  namespace: default
-stringData:
-  password: "ag5STuKWAoMemLBgwnVDDCeM5dxlVkRgkRRzpnhHx5rwrO5sNq"
-  url: "http://localhost:50962"
-  username: "managed_admin_GkCpObBUcHsMlrax"
+#apiVersion: sftpgo.zlepper.dk/v1alpha1
+#kind: SftpgoUser
+#metadata:
+#  name: sftpgo-user
+#spec:
+#  configuration:
+#    username: sftpgo-user-but-better
+#    password: sftpgo-user
+#    enabled: Enabled
+#    globalPermissions:
+#    - all
+#  sftpgoServerReference:
+#    name: sftpgo
+#
+#---
+#
+#apiVersion: v1
+#kind: Secret
+#metadata:
+#  name: sftpgo-admin-user-local
+#  namespace: default
+#stringData:
+#  password: "ag5STuKWAoMemLBgwnVDDCeM5dxlVkRgkRRzpnhHx5rwrO5sNq"
+#  url: "http://localhost:50962"
+#  username: "managed_admin_GkCpObBUcHsMlrax"

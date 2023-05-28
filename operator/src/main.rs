@@ -1,10 +1,10 @@
+mod consts;
 mod finalizers;
 mod reconciler;
 mod sftpgo_multi_client;
 mod sftpgo_server_reconciler;
 mod user_reconciler;
 mod viper_environment_serializer;
-mod consts;
 
 extern crate pretty_env_logger;
 #[macro_use]
@@ -12,7 +12,11 @@ extern crate log;
 
 use crate::reconciler::{make_reconciler, ContextData};
 use crate::sftpgo_server_reconciler::reconcile_sftpgo_server;
+use k8s_openapi::api::apps::v1::Deployment;
+use k8s_openapi::api::core::v1::{Secret, Service};
 use kube::client::Client;
+use kube::runtime::watcher;
+use kube::Api;
 use tokio::task::{JoinError, JoinSet};
 
 pub fn default<T: Default>() -> T {
@@ -23,20 +27,36 @@ pub fn default<T: Default>() -> T {
 async fn main() -> Result<(), JoinError> {
     pretty_env_logger::init_timed();
 
+    info!("Starting SFTPGo Operator");
+
     let kubernetes_client = Client::try_default()
         .await
         .expect("Expected a valid KUBECONFIG environment variable.");
 
     let mut reconcilers = JoinSet::new();
 
+    let deployments_api: Api<Deployment> = Api::all(kubernetes_client.clone());
+    let secrets_api: Api<Secret> = Api::all(kubernetes_client.clone());
+    let services_api: Api<Service> = Api::all(kubernetes_client.clone());
+
     reconcilers.spawn(make_reconciler(
         kubernetes_client.clone(),
         reconcile_sftpgo_server,
+        |c| {
+            let watcher_config =
+                watcher::Config::default().labels("managed-by=sftpgo-server-operator");
+            c.owns(deployments_api, watcher_config.clone())
+                .owns(secrets_api, watcher_config.clone())
+                .owns(services_api, watcher_config)
+        },
     ));
     reconcilers.spawn(make_reconciler(
         kubernetes_client.clone(),
         user_reconciler::reconcile_user,
+        |c| c,
     ));
+
+    info!("Reconcilers spawned");
 
     while let Some(res) = reconcilers.join_next().await {
         res?;

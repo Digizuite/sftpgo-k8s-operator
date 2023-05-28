@@ -10,6 +10,7 @@ use k8s_openapi::api::core::v1::{
 };
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::{LabelSelector, ObjectMeta, OwnerReference};
 use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
+use kube::api::{Patch, PatchParams};
 use kube::runtime::controller::Action;
 use kube::{Api, Client, Resource, ResourceExt};
 use rand::distributions::{Alphanumeric, DistString};
@@ -37,47 +38,14 @@ pub async fn reconcile_sftpgo_server(
 
     if resource.metadata.deletion_timestamp.is_some() {
         debug!("Resource {namespace}/{name} is marked for deletion");
-
-        return if controller.delete_deployment().await? {
-            debug!("Deployment for resource {namespace}/{name} deleted. Removing finalizer");
-
-            finalizers::remove_finalizer::<SftpgoServer>(
-                context.kubernetes_client.clone(),
-                &name,
-                &namespace,
-            )
-            .await?;
-            debug!("Finalizer removed from {namespace}/{name}");
-            Ok(Action::await_change())
-        } else {
-            debug!("Queued deletion of deployment for resource {namespace}/{name}");
-            Ok(Action::requeue(Duration::from_secs(15)))
-        };
-    }
-
-    if resource
-        .metadata
-        .finalizers
-        .as_ref()
-        .map_or(true, |finalizers| finalizers.is_empty())
-    {
-        debug!("Finalizer not found on resource {namespace}/{name}, adding");
-        finalizers::add_finalizer::<SftpgoServer>(
-            context.kubernetes_client.clone(),
-            &name,
-            &namespace,
-        )
-        .await?;
-        debug!("Finalizer added to {namespace}/{name}")
-    } else {
-        debug!("Finalizer found on resource {namespace}/{name}");
+        return Ok(Action::await_change());
     }
 
     controller.ensure_secret().await?;
     controller.ensure_service().await?;
     controller.ensure_deployment().await?;
 
-    Ok(Action::requeue(Duration::from_secs(15)))
+    Ok(Action::requeue(Duration::from_secs(3600)))
 }
 
 const DEFAULT_IMAGE: &str = "drakkan/sftpgo:v2.5";
@@ -114,6 +82,10 @@ impl DeploymentController {
     fn get_labels(&self) -> BTreeMap<String, String> {
         let mut labels = self.resource.labels.clone().unwrap_or_default();
         labels.insert("app".to_string(), self.name.to_string());
+        labels.insert(
+            "managed-by".to_string(),
+            "sftpgo-server-operator".to_string(),
+        );
 
         labels
     }
@@ -177,6 +149,8 @@ impl DeploymentController {
             metadata: ObjectMeta {
                 name: Some(name.to_string()),
                 namespace: Some(namespace.to_string()),
+                owner_references: Some(vec![self.owner_reference.clone()]),
+                labels: Some(self.get_labels()),
                 ..default()
             },
             spec: Some(ServiceSpec {
@@ -188,50 +162,11 @@ impl DeploymentController {
         };
 
         let service_api: Api<Service> = Api::namespaced(client, namespace);
-        if let Some(existing) = service_api.get_opt(name).await? {
-            debug!("Service {namespace}/{name} already exists");
 
-            let mut copy = existing.clone();
-
-            if let Some(ref mut spec) = &mut copy.spec {
-                if let Some(ref mut ports) = &mut spec.ports {
-                    // Iterate expected ports and update existing ports
-                    for expected_port in expected_service_ports.iter() {
-                        if let Some(existing_port) =
-                            ports.iter_mut().find(|p| p.name == expected_port.name)
-                        {
-                            existing_port.protocol = expected_port.protocol.clone();
-                            existing_port.port = expected_port.port;
-                            existing_port.target_port = expected_port.target_port.clone();
-                        } else {
-                            debug!("Port {:?} not found, adding", &expected_port.name);
-                            ports.push(expected_port.clone());
-                        }
-                    }
-
-                    // Remove ports that are not in the expected ports
-                    ports.retain(|p| expected_service_ports.iter().any(|ep| ep.name == p.name));
-                } else {
-                    spec.ports = Some(expected_service_ports);
-                }
-            } else {
-                copy.spec = expected_service.spec;
-            }
-
-            if copy.spec != existing.spec {
-                debug!("Service {namespace}/{name} has changed, updating");
-                service_api.replace(name, &default(), &copy).await?;
-                debug!("Service {namespace}/{name} updated")
-            } else {
-                debug!("Service {namespace}/{name} has not changed, skipping")
-            }
-        } else {
-            debug!("Service {namespace}/{name} does not exist, creating");
-
-            service_api.create(&default(), &expected_service).await?;
-
-            debug!("Service {namespace}/{name} created")
-        }
+        let serverside = PatchParams::apply("sftpgo-operator").force();
+        service_api
+            .patch(name, &serverside, &Patch::Apply(expected_service))
+            .await?;
         Ok(())
     }
 
@@ -303,6 +238,7 @@ impl DeploymentController {
                 name: Some(deployment_name.clone()),
                 namespace: Some(namespace.to_string()),
                 labels: Some(labels.clone()),
+                owner_references: Some(vec![self.owner_reference.clone()]),
                 ..default()
             },
             spec: Some(DeploymentSpec {
@@ -325,95 +261,15 @@ impl DeploymentController {
 
         let deployments_api: Api<Deployment> =
             Api::namespaced(self.kubernetes_client.clone(), namespace);
-        if let Some(existing) = deployments_api.get_opt(&deployment_name).await? {
-            debug!("Deployment {namespace}/{deployment_name} already exists");
+        let serverside = PatchParams::apply("sftpgo-operator").force();
 
-            let mut copy = existing.clone();
-
-            if let Some(ref mut spec) = &mut copy.spec {
-                if self.resource.replicas.is_some() && spec.replicas != self.resource.replicas {
-                    debug!(
-                        "Replicas mismatch in deployment {namespace}/{deployment_name}, updating",
-                    );
-                    spec.replicas = self.resource.replicas;
-                }
-
-                if let Some(ref mut pod_spec) = &mut spec.template.spec {
-                    if pod_spec.containers.is_empty() {
-                        debug!("No containers found in deployment {namespace}/{deployment_name}, using default");
-                        pod_spec.containers = expected_pod_spec.containers;
-                    } else {
-                        let container = &mut pod_spec.containers[0];
-
-                        if container.image.as_deref() != Some(image) {
-                            debug!(
-                            "Image mismatch in deployment {namespace}/{deployment_name}, updating"
-                        );
-                            container.image = Some(image.to_string());
-                        }
-
-                        if container.env != expected_container.env {
-                            debug!("Environment mismatch in deployment {namespace}/{deployment_name}, updating");
-                            container.env = expected_container.env;
-                        }
-
-                        if let Some(ref mut container_ports) = &mut container.ports {
-                            if container_ports.is_empty() {
-                                debug!("No ports found in container {namespace}/{deployment_name}, using default");
-                                container.ports = expected_container.ports;
-                            } else {
-                                for expected_port in &expected_ports {
-                                    let mut found = false;
-                                    for port in container_ports.iter_mut() {
-                                        if port.name == expected_port.name {
-                                            port.container_port = expected_port.container_port;
-
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if !found {
-                                        debug!("Port not in container {namespace}/{deployment_name}, adding");
-                                        container_ports.push(expected_port.clone());
-                                    }
-                                }
-
-                                container_ports.retain(|port| {
-                                    expected_ports
-                                        .iter()
-                                        .any(|expected_port| port.name == expected_port.name)
-                                });
-                            }
-                        } else {
-                            debug!("No ports found in container {namespace}/{deployment_name}, using default");
-                            container.ports = expected_container.ports;
-                        }
-                    }
-                } else {
-                    debug!("No template spec found in deployment {namespace}/{deployment_name}, using default");
-                    spec.template.spec = Some(expected_pod_spec.clone());
-                }
-            } else {
-                debug!("No spec found in deployment {namespace}/{deployment_name}, using default");
-                copy.spec = expected_deployment.spec;
-            }
-
-            if copy.spec != existing.spec {
-                debug!("Deployment {namespace}/{deployment_name} has changed, updating");
-                deployments_api
-                    .replace(&deployment_name, &default(), &copy)
-                    .await?;
-                debug!("Deployment {namespace}/{deployment_name} updated")
-            } else {
-                debug!("Deployment {namespace}/{deployment_name} has not changed, skipping")
-            }
-        } else {
-            debug!("Deployment {namespace}/{deployment_name} does not exist, creating");
-
-            deployments_api
-                .create(&default(), &expected_deployment)
-                .await?;
-        }
+        deployments_api
+            .patch(
+                &deployment_name,
+                &serverside,
+                &Patch::Apply(expected_deployment),
+            )
+            .await?;
         Ok(())
     }
 
@@ -441,6 +297,8 @@ impl DeploymentController {
 
         let management_url = format!("{http_protocol}://{name}.{namespace}.svc:{http_port}");
 
+        // Intentionally not using the patch api as we cannot ensure we generate the same password
+        // every time, and that would cause issues with actually accessing sftpgo.
         let admin_user_secret_name = format!("{}-admin-user", name);
         if let Some(ref mut existing) = secret_api.get_opt(&admin_user_secret_name).await? {
             debug!("Secret {} already exists", admin_user_secret_name);
@@ -488,6 +346,7 @@ impl DeploymentController {
                 metadata: ObjectMeta {
                     name: Some(admin_user_secret_name.clone()),
                     owner_references: Some(vec![self.owner_reference.clone()]),
+                    labels: Some(self.get_labels()),
                     ..default()
                 },
                 string_data: Some(secret_data),
@@ -498,21 +357,5 @@ impl DeploymentController {
             debug!("Secret {} created", admin_user_secret_name);
         }
         Ok(admin_user_secret_name)
-    }
-
-    async fn delete_deployment(self) -> Result<bool, Error> {
-        let result = Api::<Deployment>::namespaced(self.kubernetes_client.clone(), &self.namespace)
-            .delete(&self.get_deployment_name(), &default())
-            .await?;
-
-        Api::<Service>::namespaced(self.kubernetes_client.clone(), &self.namespace)
-            .delete(&self.name, &default())
-            .await?;
-
-        Api::<Secret>::namespaced(self.kubernetes_client.clone(), &self.namespace)
-            .delete(&self.get_admin_user_secret_name(), &default())
-            .await?;
-
-        Ok(result.is_right())
     }
 }

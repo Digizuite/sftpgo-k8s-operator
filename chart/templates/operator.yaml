@@ -1,0 +1,170 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app.kubernetes.io/component: sftpgo-operator
+    app.kubernetes.io/name: sftpgo-system
+    app.kubernetes.io/part-of: sftpgo
+  name: sftpgo-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sftpgo-operator
+  namespace: sftpgo-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: sftpgo-operator
+    app.kubernetes.io/name: sftpgo-operator
+    app.kubernetes.io/part-of: sftpgo
+  name: sftpgo-operator-role
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - persistentvolumeclaims
+    verbs:
+      - create
+      - get
+      - list
+      - update
+      - watch
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - get
+      - list
+      - update
+      - watch
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - create
+      - get
+      - list
+      - update
+      - watch
+      - patch
+      - delete
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch
+      - patch
+  - apiGroups:
+      - sftpgo.zlepper.dk
+    resources:
+      - sftpgoservers
+      - sftpgousers
+    verbs:
+      - create
+      - get
+      - list
+      - update
+      - watch
+      - patch
+      - delete
+  - apiGroups:
+      - sftpgo.zlepper.dk
+    resources:
+      - sftpgoservers/finalizers
+      - sftpgousers/finalizers
+    verbs:
+      - update
+      - patch
+  - apiGroups:
+      - sftpgo.zlepper.dk
+    resources:
+      - sftpgoservers/status
+      - sftpgousers/status
+    verbs:
+      - get
+      - update
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: sftpgo-operator
+    app.kubernetes.io/name: sftpgo-operator
+    app.kubernetes.io/part-of: sftpgo
+    servicebinding.io/controller: "true"
+  name: sftpgo-service-binding-role
+  namespace: sftpgo-system
+rules:
+  - apiGroups:
+      - sftpgo.zlepper.dk
+    resources:
+      - sftpgoservers
+      - sftpgousers
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: sftpgo-operator
+    app.kubernetes.io/name: sftpgo-operator
+    app.kubernetes.io/part-of: sftpgo
+  name: sftpgo-operator-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sftpgo-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: sftpgo-operator
+    namespace: sftpgo-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sftpgo-operator
+  namespace: sftpgo-system
+  labels:
+    app.kubernetes.io/component: sftpgo-operator
+    app.kubernetes.io/name: sftpgo-operator
+    app.kubernetes.io/part-of: sftpgo
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sftpgo-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: sftpgo-operator
+        app.kubernetes.io/name: sftpgo-operator
+        app.kubernetes.io/part-of: sftpgo
+    spec:
+      serviceAccountName: sftpgo-operator
+      containers:
+        - name: operator
+          image: sftpgo-operator:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RUST_LOG
+              value: "sftpgo_operator=info,sftpgo_client=info"
+      restartPolicy: Always

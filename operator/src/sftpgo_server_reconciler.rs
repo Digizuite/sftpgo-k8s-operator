@@ -1,7 +1,7 @@
 use crate::consts::{SECRET_KEY_PASSWORD, SECRET_KEY_URL, SECRET_KEY_USERNAME};
 use crate::reconciler::Error;
 use crate::viper_environment_serializer::ViperEnvironmentSerializer;
-use crate::{default, finalizers, ContextData};
+use crate::{default, ContextData};
 use crds::{SftpgoServer, SftpgoServerSpec};
 use k8s_openapi::api::apps::v1::{Deployment, DeploymentSpec};
 use k8s_openapi::api::core::v1::{

@@ -1,17 +1,8 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    app.kubernetes.io/component: sftpgo-operator
-    app.kubernetes.io/name: sftpgo-system
-    app.kubernetes.io/part-of: sftpgo
-  name: sftpgo-system
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: sftpgo-operator
-  namespace: sftpgo-system
+  namespace: {{ .Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -110,7 +101,7 @@ metadata:
     app.kubernetes.io/part-of: sftpgo
     servicebinding.io/controller: "true"
   name: sftpgo-service-binding-role
-  namespace: sftpgo-system
+  namespace: {{ .Release.Namespace }}
 rules:
   - apiGroups:
       - sftpgo.zlepper.dk
@@ -137,13 +128,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: sftpgo-operator
-    namespace: sftpgo-system
+    namespace: {{ .Release.Namespace }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sftpgo-operator
-  namespace: sftpgo-system
+  namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/component: sftpgo-operator
     app.kubernetes.io/name: sftpgo-operator
@@ -162,9 +153,18 @@ spec:
       serviceAccountName: sftpgo-operator
       containers:
         - name: operator
-          image: sftpgo-operator:latest
+          image: zlepper/sftpgo-k8s-operator:master
           imagePullPolicy: IfNotPresent
           env:
             - name: RUST_LOG
               value: "sftpgo_operator=info,sftpgo_client=info"
+          resources:
+            limits:
+              cpu: {{ .Values.operator.resources.limits.cpu }}
+              memory: {{ .Values.operator.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.operator.resources.requests.cpu }}
+              memory: {{ .Values.operator.resources.requests.memory }}
       restartPolicy: Always
+      nodeSelector:
+        {{- toYaml .Values.operator.nodeSelector | nindent 8 }}

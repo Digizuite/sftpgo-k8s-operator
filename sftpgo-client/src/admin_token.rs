@@ -36,27 +36,44 @@ pub trait AdminAccessTokenClient: SftpgoClientBase {
 
 impl<T> AdminAccessTokenClient for T where T: SftpgoClientBase {}
 
+struct AuthInfo {
+    username: String,
+    password: String,
+}
+
+#[derive(Clone)]
 pub struct RefreshableAdminAuthContext<T>
 where
     T: AdminAccessTokenClient + Send + Sync,
 {
-    username: String,
-    password: String,
+    creds: Arc<AuthInfo>,
     client: T,
-    token: Arc<RwLock<Option<StoredAccessToken>>>,
+    token: Arc<RwLock<StoredAccessToken>>,
 }
 
 impl<T> RefreshableAdminAuthContext<T>
 where
     T: AdminAccessTokenClient + Sync + Send,
 {
-    pub fn new(username: String, password: String, client: T) -> Self {
-        Self {
-            username,
-            password,
+    pub async fn new(
+        username: String,
+        password: String,
+        client: T,
+    ) -> Result<RefreshableAdminAuthContext<T>> {
+        let initial_token = client
+            .create_admin_access_token(&username, &password)
+            .await?;
+
+        let ctx = RefreshableAdminAuthContext {
+            creds: Arc::new(AuthInfo { username, password }),
             client,
-            token: Arc::new(RwLock::new(None)),
-        }
+            token: Arc::new(RwLock::new(StoredAccessToken {
+                access_token: initial_token.access_token,
+                expires_at: initial_token.expires_at - chrono::Duration::seconds(30),
+            })),
+        };
+
+        Ok(ctx)
     }
 }
 
@@ -75,10 +92,8 @@ where
             // Try to get the existing token purely as read
             let token = self.token.read().await;
 
-            if let Some(token) = &*token {
-                if token.expires_at > Utc::now() {
-                    return Ok(create_bearer_auth_header(&token.access_token));
-                }
+            if token.expires_at > Utc::now() {
+                return Ok(create_bearer_auth_header(&token.access_token));
             }
         }
 
@@ -88,24 +103,22 @@ where
             let mut token = self.token.write().await;
 
             // Check if another thread already refreshed the token
-            if let Some(token) = &*token {
-                if token.expires_at > Utc::now() {
-                    return Ok(create_bearer_auth_header(&token.access_token));
-                }
+            if token.expires_at > Utc::now() {
+                return Ok(create_bearer_auth_header(&token.access_token));
             }
 
             // Refresh the token
             let new_token = self
                 .client
-                .create_admin_access_token(&self.username, &self.password)
+                .create_admin_access_token(&self.creds.username, &self.creds.password)
                 .await?;
 
             let header_value = create_bearer_auth_header(&new_token.access_token);
 
-            *token = Some(StoredAccessToken {
+            *token = StoredAccessToken {
                 access_token: new_token.access_token,
                 expires_at: new_token.expires_at - chrono::Duration::seconds(30),
-            });
+            };
 
             return Ok(header_value);
         }

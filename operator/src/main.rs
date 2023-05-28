@@ -4,6 +4,7 @@ mod sftpgo_multi_client;
 mod sftpgo_server_reconciler;
 mod user_reconciler;
 mod viper_environment_serializer;
+mod consts;
 
 extern crate pretty_env_logger;
 #[macro_use]

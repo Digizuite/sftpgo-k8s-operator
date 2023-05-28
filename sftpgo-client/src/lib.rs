@@ -4,10 +4,7 @@ mod client;
 mod error_response;
 mod users;
 
-pub use admin_token::{AdminAccessToken, AdminAccessTokenClient};
-pub use client::SftpgoClient;
-
-mod prelude {
-    pub(crate) use crate::admin_token::AdminAccessTokenClient;
-    pub(crate) use crate::client::SftpgoClient;
-}
+pub use admin_token::*;
+pub use client::{AuthorizedSftpgoClient, SftpgoClient};
+pub use error_response::*;
+pub use users::{UserRequest, UserResponse, UserStatus, UsersClient};

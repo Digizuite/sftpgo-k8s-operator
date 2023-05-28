@@ -3,21 +3,21 @@ use serde::Deserialize;
 use thiserror::Error;
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
-pub struct ErrorResponseBody {
-    pub message: String,
-    pub error: String,
+pub struct GenericResponseBody {
+    pub message: Option<String>,
+    pub error: Option<String>,
 }
 
 #[derive(Error, Debug)]
 pub enum SftpgoError {
     #[error("Internal server error: {0:?}")]
-    InternalServerError(ErrorResponseBody),
+    InternalServerError(GenericResponseBody),
     #[error("Bad request: {0:?}")]
-    BadRequest(ErrorResponseBody),
+    BadRequest(GenericResponseBody),
     #[error("Unauthorized: {0:?}")]
-    Unauthorized(ErrorResponseBody),
+    Unauthorized(GenericResponseBody),
     #[error("Not found: {0:?}")]
-    NotFound(ErrorResponseBody),
+    NotFound(GenericResponseBody),
     #[error("Request error: {0:?}")]
     ReqwestError(#[from] reqwest::Error),
     #[error("Url building failed: {0:?}. This is most likely a bug in the code.")]

@@ -1,3 +1,4 @@
+use crate::sftpgo_multi_client::SftpgoMultiClient;
 use crate::viper_environment_serializer::ViperEnvironmentSerializerError;
 use futures::stream::StreamExt;
 use futures::TryFuture;
@@ -26,6 +27,7 @@ pub async fn make_reconciler<TResource, ReconcilerFut, ReconcilerFn>(
     let crd_api = Api::all(kubernetes_client.clone());
     let context = Arc::new(ContextData {
         kubernetes_client: kubernetes_client.clone(),
+        sftpgo_client: SftpgoMultiClient::new(),
     });
 
     Controller::new(crd_api.clone(), Config::default())
@@ -50,6 +52,7 @@ fn error_policy<TResource: Debug>(
 
 pub struct ContextData {
     pub kubernetes_client: Client,
+    pub sftpgo_client: SftpgoMultiClient,
 }
 
 /// All errors possible to occur during reconciliation
@@ -70,5 +73,11 @@ pub enum Error {
 
     /// Error in user input or resource definition, typically missing fields.
     #[error("Invalid CRD: {0}")]
-    UserInput(&'static str),
+    UserInput(String),
+
+    #[error("Sftpgo client reported error: {0}")]
+    SftpgoRequestFailed(#[from] sftpgo_client::SftpgoError),
+
+    #[error("Error while decoding base64: {0}")]
+    DecodeError(#[from] base64::DecodeError),
 }

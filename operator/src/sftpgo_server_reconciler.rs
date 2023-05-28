@@ -1,3 +1,4 @@
+use crate::consts::{SECRET_KEY_PASSWORD, SECRET_KEY_URL, SECRET_KEY_USERNAME};
 use crate::reconciler::Error;
 use crate::viper_environment_serializer::ViperEnvironmentSerializer;
 use crate::{default, finalizers, ContextData};
@@ -9,7 +10,6 @@ use k8s_openapi::api::core::v1::{
 };
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::{LabelSelector, ObjectMeta, OwnerReference};
 use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
-use k8s_openapi::url::quirks::port;
 use kube::runtime::controller::Action;
 use kube::{Api, Client, Resource, ResourceExt};
 use rand::distributions::{Alphanumeric, DistString};
@@ -26,7 +26,8 @@ pub async fn reconcile_sftpgo_server(
     let client = context.kubernetes_client.clone();
 
     let namespace = resource.namespace().ok_or(Error::UserInput(
-        "Expected SftpgoServer resource to be namespaced. Can't deploy to unknown namespace.",
+        "Expected SftpgoServer resource to be namespaced. Can't deploy to unknown namespace."
+            .to_string(),
     ))?;
 
     let name = resource.name_any();
@@ -439,7 +440,7 @@ async fn ensure_secret(
                     changed = true;
                 }
             } else {
-                sd.insert("url".to_string(), management_url);
+                sd.insert(SECRET_KEY_URL.to_string(), management_url);
                 changed = true;
             }
         }
@@ -452,8 +453,8 @@ async fn ensure_secret(
         }
     } else {
         debug!("Creating secret {}", admin_user_secret_name);
-        let mut secret_data = BTreeMap::new();
-        secret_data.insert("url".to_string(), management_url);
+        let mut secret_data: BTreeMap<String, String> = BTreeMap::new();
+        secret_data.insert(SECRET_KEY_URL.to_string(), management_url);
 
         {
             let mut rng = rand::thread_rng();
@@ -461,12 +462,12 @@ async fn ensure_secret(
             let username_postfix = Alphanumeric.sample_string(&mut rng, 16);
 
             secret_data.insert(
-                "username".to_string(),
+                SECRET_KEY_USERNAME.to_string(),
                 format!("managed_admin_{username_postfix}"),
             );
 
             let password = Alphanumeric.sample_string(&mut rng, 50);
-            secret_data.insert("password".to_string(), password);
+            secret_data.insert(SECRET_KEY_PASSWORD.to_string(), password);
         }
 
         let admin_user_secret = Secret {

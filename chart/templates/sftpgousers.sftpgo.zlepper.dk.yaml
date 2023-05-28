@@ -20,8 +20,82 @@ spec:
         properties:
           spec:
             properties:
-              password:
-                type: string
+              configuration:
+                properties:
+                  enabled:
+                    enum:
+                    - Disabled
+                    - Enabled
+                    nullable: true
+                    type: string
+                  globalPermissions:
+                    items:
+                      enum:
+                      - all
+                      - list
+                      - download
+                      - upload
+                      - overwrite
+                      - create_dirs
+                      - rename
+                      - rename_files
+                      - rename_dirs
+                      - delete
+                      - delete_files
+                      - delete_dirs
+                      - create_symlinks
+                      - chmod
+                      - chown
+                      - chtimes
+                      type: string
+                    type: array
+                  password:
+                    description: Password of the user. Changes to this field will not propagate to the user after creation as we have no way of retrieving the password from the server.
+                    type: string
+                  perDirectoryPermissions:
+                    items:
+                      properties:
+                        path:
+                          type: string
+                        permissions:
+                          items:
+                            enum:
+                            - all
+                            - list
+                            - download
+                            - upload
+                            - overwrite
+                            - create_dirs
+                            - rename
+                            - rename_files
+                            - rename_dirs
+                            - delete
+                            - delete_files
+                            - delete_dirs
+                            - create_symlinks
+                            - chmod
+                            - chown
+                            - chtimes
+                            type: string
+                          type: array
+                      required:
+                      - path
+                      - permissions
+                      type: object
+                    nullable: true
+                    type: array
+                  username:
+                    description: The username of the user
+                    type: string
+                required:
+                - globalPermissions
+                - password
+                - username
+                type: object
+              disconnectOnChange:
+                description: This way you force the user to login again, if connected, and so to use the new configuration
+                nullable: true
+                type: boolean
               sftpgoServerReference:
                 properties:
                   connectionSecret:
@@ -42,18 +116,21 @@ spec:
                     nullable: true
                     type: string
                 type: object
-              status:
-                enum:
-                - Disabled
-                - Enabled
-                nullable: true
-                type: string
-              username:
-                type: string
             required:
-            - password
+            - configuration
             - sftpgoServerReference
-            - username
+            type: object
+          status:
+            nullable: true
+            properties:
+              last_username:
+                type: string
+              user_id:
+                format: int32
+                nullable: true
+                type: integer
+            required:
+            - last_username
             type: object
         required:
         - spec
@@ -61,4 +138,5 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      status: {}

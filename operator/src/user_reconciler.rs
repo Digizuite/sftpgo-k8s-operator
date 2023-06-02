@@ -32,14 +32,14 @@ pub async fn reconcile_user(
     let user_configuration = resource.spec.configuration.clone();
     let server_ref = resource.spec.server_reference.clone();
 
-    if resource.metadata.deletion_timestamp.is_some() {
-        let api_client = get_api_client(&server_ref, &context, &namespace).await?;
+    let api_client = get_api_client(&server_ref, &context, &namespace).await?;
 
+    if resource.metadata.deletion_timestamp.is_some() {
         if let Some(status) = &resource.status {
-            api_client.delete_user(&status.last_username).await?;
+            api_client.delete(&status.last_username).await?;
         }
 
-        api_client.delete_user(&user_configuration.username).await?;
+        api_client.delete(&user_configuration.username).await?;
 
         finalizers::remove_finalizer::<SftpgoUser>(
             context.kubernetes_client.clone(),
@@ -60,9 +60,7 @@ pub async fn reconcile_user(
                 status.last_username, user_configuration.username
             );
 
-            let api_client = get_api_client(&server_ref, &context, &namespace).await?;
-
-            api_client.delete_user(&status.last_username).await?;
+            api_client.delete(&status.last_username).await?;
 
             let mut copy = resource.clone();
             copy.status = Some(SftpgoUserResourceStatus {
@@ -90,8 +88,6 @@ pub async fn reconcile_user(
             .await?;
     }
 
-    let api_client = get_api_client(&server_ref, &context, &namespace).await?;
-
     let permissions = calculate_permissions(&user_configuration);
 
     let user_request = UserRequest {
@@ -110,18 +106,18 @@ pub async fn reconcile_user(
     };
 
     if api_client
-        .get_user(&user_configuration.username)
+        .get(&user_configuration.username)
         .await?
         .is_some()
     {
         info!("User already exists");
 
-        api_client.update_user(user_request).await?;
+        api_client.update(&user_request).await?;
         info!("User updated");
     } else {
         info!("User does not exist, creating");
 
-        let created_user = api_client.add_user(user_request).await?;
+        let created_user = api_client.create(&user_request).await?;
 
         info!("User created");
 

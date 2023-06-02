@@ -13,6 +13,6 @@ pub fn create_bearer_auth_header(token: &str) -> String {
 }
 
 #[async_trait]
-pub trait AuthContext: Sync {
+pub trait AuthContext: Sync + Send {
     async fn get_auth_header_value(&self) -> Result<String>;
 }

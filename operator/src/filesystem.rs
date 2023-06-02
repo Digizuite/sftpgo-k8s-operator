@@ -4,9 +4,8 @@ use crds::{
     AzureBlobStorageAccessTier as CrdAccessTier, AzureBlobStorageAuthorization,
     FileSystem as CrdFileSystem,
 };
-use sftpgo_client::users::FileSystemConfig::AzureBlobStorage;
-use sftpgo_client::users::{
-    FileSystem as ClientFileSystem, FileSystemConfigAzureBlobStorage,
+use sftpgo_client::filesystem::{
+    FileSystem as ClientFileSystem, FileSystemConfig, FileSystemConfigAzureBlobStorage,
     FileSystemConfigAzureBlobStorageAccessTier, FileSystemConfigAzureBlobStorageAuthorization,
     FileSystemProvider, SftpgoSecret, SftpgoSecretStatus,
 };
@@ -18,14 +17,14 @@ pub async fn calculate_file_system(filesystem: &CrdFileSystem) -> Result<ClientF
             write_buffer_size,
         } => ClientFileSystem {
             provider: FileSystemProvider::LocalFilesystem,
-            config: sftpgo_client::users::FileSystemConfig::OsConfig {
+            config: FileSystemConfig::OsConfig {
                 read_buffer_size: read_buffer_size.unwrap_or(0),
                 write_buffer_size: write_buffer_size.unwrap_or(0),
             },
         },
         CrdFileSystem::AzureBlobStorage(blob) => ClientFileSystem {
             provider: FileSystemProvider::AzureBlobStorage,
-            config: AzureBlobStorage(Box::new(FileSystemConfigAzureBlobStorage {
+            config: FileSystemConfig::AzureBlobStorage(Box::new(FileSystemConfigAzureBlobStorage {
                 auth: match &blob.authorization {
                     AzureBlobStorageAuthorization::SharedKey {
                         account_key,

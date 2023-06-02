@@ -5,8 +5,10 @@ use k8s_openapi::api::core::v1::Secret;
 use k8s_openapi::ByteString;
 use kube::Api;
 use reqwest::Url;
+use serde::{Deserialize, Serialize};
 use sftpgo_client::{
-    AuthorizedSftpgoClient, RefreshableAdminAuthContext, SftpgoClient, UsersClient,
+    AuthorizedSftpgoClient, CreatedFrom, Creates, EasyRestSftpgoClient, Named,
+    RefreshableAdminAuthContext, SftpgoClient, SftpgoRestClient,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -36,12 +38,14 @@ impl SftpgoMultiClient {
     }
 }
 
+type AuthorizedClients = Arc<
+    RwLock<HashMap<String, Arc<AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>>>>,
+>;
+
 #[derive(Clone)]
 pub struct KnownSftpgoClient {
     client: SftpgoClient,
-    authorized_clients: Arc<
-        RwLock<HashMap<String, AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>>>,
-    >,
+    authorized_clients: AuthorizedClients,
 }
 
 impl KnownSftpgoClient {
@@ -52,16 +56,23 @@ impl KnownSftpgoClient {
         }
     }
 
-    pub async fn get_authorized_client<'a>(
+    pub async fn get_authorized_client<TRequest, TResponse>(
         &self,
         username: &str,
         password: &str,
-    ) -> Result<AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>, Error> {
+    ) -> Result<Box<Arc<dyn SftpgoRestClient<TRequest, TResponse>>>, Error>
+    where
+        TRequest: Serialize + Sync + Named + Creates<TResponse>,
+        TResponse: for<'de> Deserialize<'de> + CreatedFrom<TRequest>,
+        AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>:
+            EasyRestSftpgoClient<TRequest, TResponse>,
+    {
         {
             let all = self.authorized_clients.read().await;
 
             if let Some(client) = all.get(username) {
-                return Ok(client.clone());
+                let autho = client.clone();
+                return Ok(Box::new(autho));
             }
         }
 
@@ -76,17 +87,24 @@ impl KnownSftpgoClient {
             .await?;
 
             let new_client = self.client.with_auth_context(ctx);
-            all.insert(username.to_string(), new_client.clone());
-            Ok(new_client)
+            let a = Arc::new(new_client);
+            all.insert(username.to_string(), a.clone());
+            Ok(Box::new(a))
         }
     }
 }
 
-pub async fn get_api_client(
+pub async fn get_api_client<TRequest, TResponse>(
     server_ref: &ServerReference,
     context: &ContextData,
     namespace: &String,
-) -> Result<Box<dyn UsersClient>, Error> {
+) -> Result<Box<Arc<dyn SftpgoRestClient<TRequest, TResponse>>>, Error>
+where
+    TRequest: Serialize + Sync + Named + Creates<TResponse>,
+    TResponse: for<'de> Deserialize<'de> + CreatedFrom<TRequest>,
+    AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>:
+        EasyRestSftpgoClient<TRequest, TResponse>,
+{
     let connection_info = if let Some(connection_secret) = &server_ref.connection_secret {
         if server_ref.name.is_some() || server_ref.namespace.is_some() {
             return Err(Error::UserInput(
@@ -123,15 +141,6 @@ pub async fn get_api_client(
         ));
     };
 
-    let client = get_admin_client(connection_info, context).await?;
-
-    Ok(client)
-}
-
-async fn get_admin_client(
-    connection_info: ConnectionInfo,
-    context: &ContextData,
-) -> Result<Box<dyn UsersClient>, Error> {
     let c = context
         .sftpgo_client
         .get_client(&connection_info.uid, connection_info.url.clone())
@@ -141,7 +150,7 @@ async fn get_admin_client(
         .get_authorized_client(&connection_info.username, &connection_info.password)
         .await?;
 
-    Ok(Box::new(authorized_client))
+    Ok(authorized_client)
 }
 
 struct ConnectionInfo {

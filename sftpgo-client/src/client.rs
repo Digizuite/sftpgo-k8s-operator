@@ -3,7 +3,7 @@ use crate::error_response::Result;
 use reqwest::{Client, Url};
 use std::sync::Arc;
 
-pub trait SftpgoClientBase {
+pub trait SftpgoClientBase: Send + Sync {
     fn get_client(&self) -> &Client;
     fn url_for(&self, endpoint: &str) -> Result<Url>;
 }
@@ -81,16 +81,19 @@ where
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use crate::AuthorizedSftpgoClient;
+
     #[test]
     fn is_send_and_sync() {
         use crate::{RefreshableAdminAuthContext, SftpgoClient};
 
         fn is_send<T: Send>() {}
         fn is_sync<T: Sync>() {}
-        is_send::<super::SftpgoClient>();
-        is_sync::<super::SftpgoClient>();
-        is_send::<super::AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>>();
-        is_sync::<super::AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>>();
+        is_send::<SftpgoClient>();
+        is_sync::<SftpgoClient>();
+        is_send::<AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>>();
+        is_sync::<AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>>();
     }
 }

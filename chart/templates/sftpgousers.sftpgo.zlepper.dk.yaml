@@ -28,6 +28,91 @@ spec:
                     - Enabled
                     nullable: true
                     type: string
+                  filesystem:
+                    oneOf:
+                    - required:
+                      - local
+                    - required:
+                      - azureBlobStorage
+                    properties:
+                      azureBlobStorage:
+                        properties:
+                          accessTier:
+                            enum:
+                            - Hot
+                            - Cool
+                            - Archive
+                            nullable: true
+                            type: string
+                          authorization:
+                            oneOf:
+                            - required:
+                              - sharedKey
+                            - required:
+                              - sharedAccessSignatureUrl
+                            properties:
+                              sharedAccessSignatureUrl:
+                                type: string
+                              sharedKey:
+                                properties:
+                                  accountKey:
+                                    type: string
+                                  accountName:
+                                    type: string
+                                  container:
+                                    type: string
+                                required:
+                                - accountKey
+                                - accountName
+                                - container
+                                type: object
+                            type: object
+                          downloadConcurrency:
+                            description: the number of parts to download in parallel. If this value is not set, the default value (5) will be used
+                            format: int32
+                            nullable: true
+                            type: integer
+                          downloadPartSize:
+                            description: the buffer size (in MB) to use for multipart downloads. If this value is not set, the default value (5MB) will be used.
+                            format: int32
+                            nullable: true
+                            type: integer
+                          endpoint:
+                            description: optional endpoint. Default is "blob.core.windows.net". If you use the emulator the endpoint must include the protocol, for example "http://127.0.0.1:10000"
+                            nullable: true
+                            type: string
+                          keyPrefix:
+                            description: key_prefix is similar to a chroot directory for a local filesystem. If specified the user will only see contents that starts with this prefix and so you can restrict access to a specific virtual folder. The prefix, if not empty, must not start with "/" and must end with "/". If empty the whole container contents will be available
+                            nullable: true
+                            type: string
+                          uploadConcurrency:
+                            description: the number of parts to upload in parallel. If this value is not set, the default value (5) will be used
+                            format: int32
+                            nullable: true
+                            type: integer
+                          uploadPartSize:
+                            description: the buffer size (in MB) to use for multipart uploads. If this value is not set, the default value (5MB) will be used.
+                            format: int32
+                            nullable: true
+                            type: integer
+                          useEmulator:
+                            nullable: true
+                            type: boolean
+                        required:
+                        - authorization
+                        type: object
+                      local:
+                        properties:
+                          readBufferSize:
+                            format: int32
+                            nullable: true
+                            type: integer
+                          writeBufferSize:
+                            format: int32
+                            nullable: true
+                            type: integer
+                        type: object
+                    type: object
                   globalPermissions:
                     items:
                       enum:
@@ -49,6 +134,8 @@ spec:
                       - chtimes
                       type: string
                     type: array
+                  homeDir:
+                    type: string
                   password:
                     description: Password of the user. Changes to this field will not propagate to the user after creation as we have no way of retrieving the password from the server.
                     type: string
@@ -88,7 +175,9 @@ spec:
                     description: The username of the user
                     type: string
                 required:
+                - filesystem
                 - globalPermissions
+                - homeDir
                 - password
                 - username
                 type: object

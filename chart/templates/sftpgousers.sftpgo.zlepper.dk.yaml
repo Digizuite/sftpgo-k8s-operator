@@ -60,6 +60,7 @@ spec:
                                   accountName:
                                     type: string
                                   container:
+                                    description: The name of the container to use. Sftpgo does not create this automatically, so make sure it exists before using it here.
                                     type: string
                                 required:
                                 - accountKey

@@ -75,8 +75,10 @@ pub enum ProvidedValue<T> {
 pub enum AzureBlobStorageAuthorization {
     #[serde(rename_all = "camelCase")]
     SharedKey {
-        account_name: String,
+        /// The name of the container to use. Sftpgo does not create this automatically, so make sure
+        /// it exists before using it here.
         container: String,
+        account_name: String,
         account_key: String,
     },
     SharedAccessSignatureUrl(String),

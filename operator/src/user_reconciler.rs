@@ -1,9 +1,9 @@
+use crate::filesystem::calculate_file_system;
 use crate::reconciler::{ContextData, Error};
 use crate::sftpgo_multi_client::get_api_client;
 use crate::{default, finalizers};
 use crds::{
-    AzureBlobStorageAccessTier, AzureBlobStorageAuthorization, FileSystem, SftpgoUser,
-    SftpgoUserConfiguration, SftpgoUserResourceStatus, SftpgoUserStatus, UserPermission,
+    SftpgoUser, SftpgoUserConfiguration, SftpgoUserResourceStatus, SftpgoUserStatus, UserPermission,
 };
 use kube::api::Patch;
 use kube::runtime::controller::Action;
@@ -51,23 +51,7 @@ pub async fn reconcile_user(
         return Ok(Action::await_change());
     }
 
-    if resource
-        .metadata
-        .finalizers
-        .as_ref()
-        .map_or(true, |finalizers| finalizers.is_empty())
-    {
-        debug!("Finalizer not found on resource {namespace}/{name}, adding");
-        resource = finalizers::add_finalizer::<SftpgoUser>(
-            context.kubernetes_client.clone(),
-            &name,
-            &namespace,
-        )
-        .await?;
-        debug!("Finalizer added to {namespace}/{name}")
-    } else {
-        debug!("Finalizer found on resource {namespace}/{name}");
-    }
+    resource = finalizers::ensure_finalizer(resource, context.kubernetes_client.clone()).await?;
 
     if let Some(status) = &resource.status {
         if status.last_username != user_configuration.username {
@@ -121,7 +105,7 @@ pub async fn reconcile_user(
             }),
         permissions: permissions.clone(),
         home_dir: user_configuration.home_dir.clone(),
-        filesystem: calculate_file_system(&user_configuration).await?,
+        filesystem: calculate_file_system(&user_configuration.filesystem).await?,
         ..default()
     };
 
@@ -155,62 +139,6 @@ pub async fn reconcile_user(
     }
 
     Ok(Action::await_change())
-}
-
-async fn calculate_file_system(
-    user_configuration: &SftpgoUserConfiguration,
-) -> Result<sftpgo_client::users::FileSystem, Error> {
-    let fs = match &user_configuration.filesystem {
-        FileSystem::Local {
-            read_buffer_size,
-            write_buffer_size,
-        } => sftpgo_client::users::FileSystem {
-            provider: sftpgo_client::users::FileSystemProvider::LocalFilesystem,
-            config: sftpgo_client::users::FileSystemConfig::OsConfig {
-                read_buffer_size: read_buffer_size.unwrap_or(0),
-                write_buffer_size: write_buffer_size.unwrap_or(0),
-            },
-        },
-        FileSystem::AzureBlobStorage(blob) => sftpgo_client::users::FileSystem {
-            provider: sftpgo_client::users::FileSystemProvider::AzureBlobStorage,
-            config: sftpgo_client::users::FileSystemConfig::AzureBlobStorage(Box::new(
-                sftpgo_client::users::FileSystemConfigAzureBlobStorage {
-                    auth: match &blob.authorization {
-                        AzureBlobStorageAuthorization::SharedKey{ account_key, account_name, container}  => sftpgo_client::users::FileSystemConfigAzureBlobStorageAuthorization::SharedKey {
-                            account_name: account_name.clone(),
-                            container: container.clone(),
-                            account_key: sftpgo_client::users::SftpgoSecret {
-                                status: sftpgo_client::users::SftpgoSecretStatus::Plain,
-                                payload: account_key.clone(),
-                                ..default()
-                            },
-                        },
-                        AzureBlobStorageAuthorization::SharedAccessSignatureUrl(url) => sftpgo_client::users::FileSystemConfigAzureBlobStorageAuthorization::SharedAccessSignatureUrl {
-                            sas_url: sftpgo_client::users::SftpgoSecret {
-                                status: sftpgo_client::users::SftpgoSecretStatus::Plain,
-                                payload: url.clone(),
-                                ..default()
-                            }
-                        }
-                    },
-                    endpoint: blob.endpoint.clone(),
-                    upload_part_size: blob.upload_part_size.unwrap_or(5),
-                    upload_concurrency: blob.upload_concurrency.unwrap_or(5),
-                    download_part_size: blob.download_part_size.unwrap_or(5),
-                    download_concurrency: blob.download_concurrency.unwrap_or(5),
-                    access_tier: blob.access_tier.map(|t| match t {
-                        AzureBlobStorageAccessTier::Hot => sftpgo_client::users::FileSystemConfigAzureBlobStorageAccessTier::Hot,
-                        AzureBlobStorageAccessTier::Cool => sftpgo_client::users::FileSystemConfigAzureBlobStorageAccessTier::Cool,
-                        AzureBlobStorageAccessTier::Archive => sftpgo_client::users::FileSystemConfigAzureBlobStorageAccessTier::Archive,
-                    }),
-                    key_prefix: blob.key_prefix.clone(),
-                    use_emulator: blob.use_emulator,
-                },
-            )),
-        },
-    };
-
-    Ok(fs)
 }
 
 fn calculate_permissions(

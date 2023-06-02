@@ -1,4 +1,5 @@
 mod consts;
+mod filesystem;
 mod finalizers;
 mod reconciler;
 mod sftpgo_multi_client;
@@ -10,6 +11,7 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
+pub use crate::reconciler::Error;
 use crate::reconciler::{make_reconciler, ContextData};
 use crate::sftpgo_server_reconciler::reconcile_sftpgo_server;
 use k8s_openapi::api::apps::v1::Deployment;

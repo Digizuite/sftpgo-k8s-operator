@@ -1,6 +1,6 @@
 use crate::consts::{SECRET_KEY_PASSWORD, SECRET_KEY_URL, SECRET_KEY_USERNAME};
 use crate::reconciler::{ContextData, Error};
-use crds::ServerReference;
+use crds::{ConnectionOverride, ServerReference};
 use k8s_openapi::api::core::v1::Secret;
 use k8s_openapi::ByteString;
 use kube::Api;
@@ -87,7 +87,7 @@ pub async fn get_api_client(
     context: &ContextData,
     namespace: &String,
 ) -> Result<Box<dyn UsersClient>, Error> {
-    if let Some(connection_secret) = &server_ref.connection_secret {
+    let connection_info = if let Some(connection_secret) = &server_ref.connection_secret {
         if server_ref.name.is_some() || server_ref.namespace.is_some() {
             return Err(Error::UserInput(
                 "Both connectionSecret and name/namespace are set. Only one set can be specified"
@@ -98,25 +98,65 @@ pub async fn get_api_client(
         let secret_namespace = connection_secret.namespace.as_ref().unwrap_or(namespace);
         let secret_name = &connection_secret.name;
 
-        Ok(get_admin_secret(context, secret_namespace, secret_name).await?)
+        get_admin_secret_values(
+            context,
+            secret_namespace,
+            secret_name,
+            &server_ref.override_values,
+        )
+        .await?
     } else if let Some(name) = &server_ref.name {
         let target_namespace = server_ref.namespace.as_ref().unwrap_or(namespace);
 
         let admin_user_secret_name = format!("{}-admin-user", name);
 
-        Ok(get_admin_secret(context, target_namespace, &admin_user_secret_name).await?)
+        get_admin_secret_values(
+            context,
+            target_namespace,
+            &admin_user_secret_name,
+            &server_ref.override_values,
+        )
+        .await?
     } else {
-        Err(Error::UserInput(
+        return Err(Error::UserInput(
             "Either connectionSecret or name/namespace must be set".to_string(),
-        ))
-    }
+        ));
+    };
+
+    let client = get_admin_client(connection_info, context).await?;
+
+    Ok(client)
 }
 
-async fn get_admin_secret(
+async fn get_admin_client(
+    connection_info: ConnectionInfo,
+    context: &ContextData,
+) -> Result<Box<dyn UsersClient>, Error> {
+    let c = context
+        .sftpgo_client
+        .get_client(&connection_info.uid, connection_info.url.clone())
+        .await;
+
+    let authorized_client = c
+        .get_authorized_client(&connection_info.username, &connection_info.password)
+        .await?;
+
+    Ok(Box::new(authorized_client))
+}
+
+struct ConnectionInfo {
+    url: Url,
+    username: String,
+    password: String,
+    uid: String,
+}
+
+async fn get_admin_secret_values(
     context: &ContextData,
     secret_namespace: &str,
     secret_name: &str,
-) -> Result<Box<dyn UsersClient>, Error> {
+    connection_override: &Option<ConnectionOverride>,
+) -> Result<ConnectionInfo, Error> {
     let secret_api: Api<Secret> =
         Api::namespaced(context.kubernetes_client.clone(), secret_namespace);
 
@@ -143,14 +183,29 @@ async fn get_admin_secret(
                     secret_name, e
                 ))
             })?;
-            let c = context
-                .sftpgo_client
-                .get_client(&secret.metadata.uid.unwrap(), u)
-                .await;
 
-            let authorized_client = c.get_authorized_client(username, password).await?;
+            let mut info = ConnectionInfo {
+                url: u,
+                username: username.to_string(),
+                password: password.to_string(),
+                uid: secret.metadata.uid.unwrap(),
+            };
+            if let Some(o) = connection_override {
+                if let Some(url) = &o.url {
+                    let u = Url::parse(url).map_err(|e| {
+                        Error::UserInput(format!("Override contains invalid URL: {:?}", e))
+                    })?;
 
-            Ok(Box::new(authorized_client))
+                    info.url = u;
+                }
+                if let Some(username) = &o.username {
+                    info.username = username.clone();
+                }
+                if let Some(password) = &o.password {
+                    info.password = password.clone();
+                }
+            }
+            Ok(info)
         } else {
             Err(Error::UserInput(format!(
                 "Secret {} does not contain stringData",

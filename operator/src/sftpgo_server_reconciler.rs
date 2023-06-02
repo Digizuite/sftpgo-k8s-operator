@@ -117,6 +117,55 @@ impl DeploymentController {
                 ..default()
             });
         }
+
+        if let Some(sftpd_bindings) = self
+            .resource
+            .configuration
+            .as_ref()
+            .and_then(|c| c.sftpd.as_ref())
+            .and_then(|s| s.bindings.as_ref())
+        {
+            for sftpd_binding in sftpd_bindings {
+                let port_number = sftpd_binding.port.unwrap_or(2022);
+                let port_name = format!("sftp-{}", port_number);
+                expected_ports.push(ContainerPort {
+                    name: Some(port_name),
+                    container_port: port_number,
+                    ..default()
+                });
+            }
+        }
+
+        if let Some(ftpd) = self
+            .resource
+            .configuration
+            .as_ref()
+            .and_then(|c| c.ftpd.as_ref())
+        {
+            if let Some(bindings) = &ftpd.bindings {
+                for binding in bindings {
+                    let port_number = binding.port.unwrap_or(21);
+                    let port_name = format!("ftp-{}", port_number);
+                    expected_ports.push(ContainerPort {
+                        name: Some(port_name),
+                        container_port: port_number,
+                        ..default()
+                    });
+                }
+            }
+
+            if let Some(passive_port_range) = &ftpd.passive_port_range {
+                for port_number in passive_port_range.start..=passive_port_range.end {
+                    let port_name = format!("ftp-data-{}", port_number);
+                    expected_ports.push(ContainerPort {
+                        name: Some(port_name),
+                        container_port: port_number,
+                        ..default()
+                    });
+                }
+            }
+        }
+
         expected_ports
     }
 

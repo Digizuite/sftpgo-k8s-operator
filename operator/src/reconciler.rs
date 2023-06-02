@@ -42,7 +42,7 @@ pub async fn make_reconciler<TResource, ReconcilerFut, ReconcilerFn, CustomizeFn
         .for_each(|res| async move {
             match res {
                 Ok(o) => debug!("reconciled: {:?}", o),
-                Err(e) => error!("reconcile failed: {}", e),
+                Err(e) => error!("reconcile failed: {:?}", e),
             }
         })
         .await

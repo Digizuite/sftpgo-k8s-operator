@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 kube = { version = "0.82.2", default-features = false, features = ["client", "rustls-tls", "runtime", "derive"] }
-k8s-openapi = { version = "0.18.0", features = ["v1_25"] }
+k8s-openapi = { version = "0.18.0", features = ["v1_25", "schemars"] }
 serde = "1"
 serde_json = "1.0"
 schemars = { version = "0.8", features = ["derive", "preserve_order"] }

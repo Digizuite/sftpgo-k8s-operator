@@ -115,6 +115,19 @@ spec:
                   namespace:
                     nullable: true
                     type: string
+                  overrideValues:
+                    nullable: true
+                    properties:
+                      password:
+                        nullable: true
+                        type: string
+                      url:
+                        nullable: true
+                        type: string
+                      username:
+                        nullable: true
+                        type: string
+                    type: object
                 type: object
             required:
             - configuration

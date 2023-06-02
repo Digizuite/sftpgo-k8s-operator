@@ -118,7 +118,7 @@ pub struct Sftpd {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct SftpdBinding {
-    pub port: Option<i64>,
+    pub port: Option<i32>,
     pub address: Option<String>,
     pub apply_proxy_config: Option<bool>,
 }
@@ -142,7 +142,7 @@ pub struct Ftpd {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct FtpdBinding {
-    pub port: Option<i64>,
+    pub port: Option<i32>,
     pub address: Option<String>,
     pub apply_proxy_config: Option<bool>,
     pub tls_mode: Option<i64>,
@@ -167,8 +167,8 @@ pub struct FtpdBindingPassiveIpOverride {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct PassivePortRange {
-    pub start: Option<i64>,
-    pub end: Option<i64>,
+    pub start: i32,
+    pub end: i32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]

@@ -140,6 +140,7 @@ metadata:
     app.kubernetes.io/name: sftpgo-operator
     app.kubernetes.io/part-of: sftpgo
 spec:
+  replicas: {{ .Values.operator.enable | ternary 1 0 }}
   selector:
     matchLabels:
       app.kubernetes.io/name: sftpgo-operator

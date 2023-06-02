@@ -550,7 +550,7 @@ spec:
                               nullable: true
                               type: array
                             port:
-                              format: int64
+                              format: int32
                               nullable: true
                               type: integer
                             tls_cipher_suites:
@@ -599,13 +599,14 @@ spec:
                         nullable: true
                         properties:
                           end:
-                            format: int64
-                            nullable: true
+                            format: int32
                             type: integer
                           start:
-                            format: int64
-                            nullable: true
+                            format: int32
                             type: integer
+                        required:
+                        - end
+                        - start
                         type: object
                     type: object
                   http:
@@ -1064,7 +1065,7 @@ spec:
                               nullable: true
                               type: boolean
                             port:
-                              format: int64
+                              format: int32
                               nullable: true
                               type: integer
                           type: object

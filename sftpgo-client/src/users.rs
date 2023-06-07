@@ -1,7 +1,7 @@
 use crate::error_response::Result;
 use crate::filesystem::FileSystem;
 use crate::rest_client::{Creates, EasyRestSftpgoClient, Named};
-use crate::AuthorizedSftpgoClientBase;
+use crate::{AuthorizedSftpgoClientBase, Existing};
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
 use std::collections::HashMap;
@@ -77,6 +77,16 @@ pub struct UserResponse {
     pub upload_data_transfer: Option<i64>,
     pub download_data_transfer: Option<i64>,
     pub total_data_transfer: Option<i64>,
+}
+
+impl Existing for UserResponse {
+    fn name(&self) -> &str {
+        &self.username
+    }
+
+    fn id(&self) -> i32 {
+        self.id
+    }
 }
 
 impl<Client> EasyRestSftpgoClient<UserRequest, UserResponse> for Client

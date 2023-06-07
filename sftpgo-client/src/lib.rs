@@ -11,5 +11,7 @@ pub use admin_token::*;
 pub use auth::AuthContext;
 pub use client::{AuthorizedSftpgoClient, AuthorizedSftpgoClientBase, SftpgoClient};
 pub use error_response::*;
-pub use rest_client::{CreatedFrom, Creates, EasyRestSftpgoClient, Named, SftpgoRestClient};
+pub use rest_client::{
+    CreatedFrom, Creates, EasyRestSftpgoClient, Existing, Named, SftpgoRestClient,
+};
 pub use users::{UserRequest, UserResponse, UserStatus};

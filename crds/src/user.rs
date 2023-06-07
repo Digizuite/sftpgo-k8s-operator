@@ -1,5 +1,5 @@
 use crate::sftpgo_server_reference::ServerReference;
-use crate::FileSystem;
+use crate::{FileSystem, SftpgoStatus};
 use kube::CustomResource;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -99,4 +99,22 @@ pub struct SftpgoUserSpec {
 pub struct SftpgoUserResourceStatus {
     pub last_username: String,
     pub user_id: Option<i32>,
+}
+
+impl SftpgoStatus for SftpgoUserResourceStatus {
+    fn get_last_name(&self) -> &str {
+        &self.last_username
+    }
+
+    fn set_last_name(&mut self, name: &str) {
+        self.last_username = name.to_string();
+    }
+
+    fn get_id(&self) -> Option<i32> {
+        self.user_id
+    }
+
+    fn set_id(&mut self, id: Option<i32>) {
+        self.user_id = id;
+    }
 }

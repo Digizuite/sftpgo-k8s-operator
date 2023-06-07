@@ -1,12 +1,23 @@
-use crate::sftpgo_multi_client::SftpgoMultiClient;
+use crate::default;
+use crate::finalizers::{ensure_finalizer, remove_finalizer};
+use crate::sftpgo_multi_client::{get_api_client, SftpgoMultiClient};
 use crate::viper_environment_serializer::ViperEnvironmentSerializerError;
+use async_trait::async_trait;
+use crds::{ServerReference, SftpgoStatus};
 use futures::stream::StreamExt;
 use futures::TryFuture;
+use k8s_openapi::NamespaceResourceScope;
+use kube::api::Patch;
 use kube::runtime::controller::Action;
 use kube::runtime::watcher::Config;
 use kube::runtime::Controller;
-use kube::{Api, Client, CustomResourceExt, Resource};
+use kube::{Api, Client, CustomResourceExt, Resource, ResourceExt};
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
+use sftpgo_client::{
+    AuthorizedSftpgoClient, CreatedFrom, Creates, EasyRestSftpgoClient, Existing,
+    RefreshableAdminAuthContext, SftpgoClient,
+};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
@@ -87,4 +98,120 @@ pub enum Error {
 
     #[error("Error while decoding base64: {0}")]
     DecodeError(#[from] base64::DecodeError),
+}
+
+#[async_trait]
+pub trait SftpgoResource {
+    type Status: SftpgoStatus;
+    type Request: Serialize + Sync + Creates<Self::Response>;
+    type Response: for<'de> Deserialize<'de> + CreatedFrom<Self::Request>;
+
+    fn get_name(&self) -> &str;
+    async fn get_request(&self) -> Result<Self::Request, Error>;
+    fn get_server_reference(&self) -> &ServerReference;
+    fn get_status(&self) -> &Option<Self::Status>;
+    fn set_last_name(&mut self, name: &str);
+    fn set_id(&mut self, id: Option<i32>);
+}
+
+pub async fn sftpgo_api_resource_reconciler<TCrd>(
+    resource: Arc<TCrd>,
+    context: Arc<ContextData>,
+) -> Result<Action, Error>
+where
+    TCrd: SftpgoResource
+        + Clone
+        + Resource<Scope = NamespaceResourceScope>
+        + CustomResourceExt
+        + DeserializeOwned
+        + Serialize
+        + Debug
+        + Send
+        + Sync
+        + 'static,
+    TCrd::DynamicType: Debug + Unpin + Eq + Hash + Clone + Default,
+    AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>:
+        EasyRestSftpgoClient<TCrd::Request, TCrd::Response>,
+{
+    let name = resource.name_any();
+
+    let namespace = resource.namespace().ok_or(Error::UserInput(
+        "Expected SftpgoUser resource to be namespaced. Can't deploy to unknown namespace."
+            .to_string(),
+    ))?;
+
+    let resource_api: Api<TCrd> = Api::namespaced(context.kubernetes_client.clone(), &namespace);
+
+    let mut resource = resource_api.get(&name).await?;
+    let server_ref = resource.get_server_reference();
+
+    let api_client =
+        get_api_client::<TCrd::Request, TCrd::Response>(server_ref, &context, &namespace).await?;
+
+    let sftpgo_name = resource.get_name().to_string();
+    if resource.meta().deletion_timestamp.is_some() {
+        if let Some(status) = &resource.get_status() {
+            api_client.delete(status.get_last_name()).await?;
+        }
+
+        api_client.delete(&sftpgo_name).await?;
+
+        remove_finalizer::<TCrd>(context.kubernetes_client.clone(), &name, &namespace).await?;
+
+        return Ok(Action::await_change());
+    }
+
+    resource = ensure_finalizer(resource, context.kubernetes_client.clone()).await?;
+
+    if let Some(status) = &resource.get_status() {
+        if status.get_last_name() != sftpgo_name {
+            info!(
+                "Name changed from {} to {}, deleting old resource",
+                status.get_last_name(),
+                resource.get_name()
+            );
+
+            api_client.delete(status.get_last_name()).await?;
+
+            resource.set_last_name(&sftpgo_name);
+
+            resource = resource_api
+                .patch_status(&name, &default(), &Patch::Merge(resource))
+                .await?;
+        } else {
+            info!("Name did not change, no need to delete old resource");
+        }
+    } else {
+        info!("No status set");
+
+        resource.set_last_name(&sftpgo_name);
+
+        resource = resource_api
+            .patch_status(&name, &default(), &Patch::Merge(resource))
+            .await?;
+    }
+
+    let request = resource.get_request().await?;
+
+    if api_client.get(&sftpgo_name).await?.is_some() {
+        info!("Updating resource {}", sftpgo_name);
+
+        api_client.update(&request).await?;
+        info!("Updated resource {}", sftpgo_name);
+    } else {
+        info!("Creating resource {}", sftpgo_name);
+
+        let created_resource = api_client.create(&request).await?;
+
+        info!("Created resource {}", sftpgo_name);
+
+        resource.set_id(Some(created_resource.id()));
+        resource_api
+            .patch_status(&name, &default(), &Patch::Merge(resource))
+            .await?;
+
+        info!("Updated status for resource {}", sftpgo_name);
+    }
+
+    Ok(Action::await_change())
 }

@@ -1,141 +1,13 @@
+use crate::default;
 use crate::filesystem::calculate_file_system;
-use crate::reconciler::{ContextData, Error};
-use crate::sftpgo_multi_client::get_api_client;
-use crate::{default, finalizers};
+use crate::reconciler::{Error, SftpgoResource};
+use async_trait::async_trait;
 use crds::{
-    SftpgoUser, SftpgoUserConfiguration, SftpgoUserResourceStatus, SftpgoUserStatus, UserPermission,
+    ServerReference, SftpgoStatus, SftpgoUser, SftpgoUserConfiguration, SftpgoUserResourceStatus,
+    SftpgoUserStatus, UserPermission,
 };
-use kube::api::Patch;
-use kube::runtime::controller::Action;
-use kube::{Api, ResourceExt};
-use sftpgo_client::{UserRequest, UserStatus};
+use sftpgo_client::{UserRequest, UserResponse, UserStatus};
 use std::collections::HashMap;
-use std::sync::Arc;
-
-pub async fn reconcile_user(
-    resource: Arc<SftpgoUser>,
-    context: Arc<ContextData>,
-) -> Result<Action, Error> {
-    info!("Running user conciliation");
-
-    let name = resource.name_any();
-
-    let namespace = resource.namespace().ok_or(Error::UserInput(
-        "Expected SftpgoUser resource to be namespaced. Can't deploy to unknown namespace."
-            .to_string(),
-    ))?;
-
-    let sftpgo_user_api: Api<SftpgoUser> =
-        Api::namespaced(context.kubernetes_client.clone(), &namespace);
-    let mut resource = sftpgo_user_api.get(&name).await?;
-
-    let user_configuration = resource.spec.configuration.clone();
-    let server_ref = resource.spec.server_reference.clone();
-
-    let api_client = get_api_client(&server_ref, &context, &namespace).await?;
-
-    if resource.metadata.deletion_timestamp.is_some() {
-        if let Some(status) = &resource.status {
-            api_client.delete(&status.last_username).await?;
-        }
-
-        api_client.delete(&user_configuration.username).await?;
-
-        finalizers::remove_finalizer::<SftpgoUser>(
-            context.kubernetes_client.clone(),
-            &name,
-            &namespace,
-        )
-        .await?;
-
-        return Ok(Action::await_change());
-    }
-
-    resource = finalizers::ensure_finalizer(resource, context.kubernetes_client.clone()).await?;
-
-    if let Some(status) = &resource.status {
-        if status.last_username != user_configuration.username {
-            info!(
-                "Username changed from {} to {}. Deleting old user since usernames cannot be changed",
-                status.last_username, user_configuration.username
-            );
-
-            api_client.delete(&status.last_username).await?;
-
-            let mut copy = resource.clone();
-            copy.status = Some(SftpgoUserResourceStatus {
-                last_username: user_configuration.username.clone(),
-                ..default()
-            });
-
-            resource = sftpgo_user_api
-                .patch_status(&name, &default(), &Patch::Merge(copy))
-                .await?;
-        } else {
-            info!("Username not changed");
-        }
-    } else {
-        info!("No status set");
-
-        let mut copy = resource.clone();
-        copy.status = Some(SftpgoUserResourceStatus {
-            last_username: user_configuration.username.clone(),
-            ..default()
-        });
-
-        resource = sftpgo_user_api
-            .patch_status(&name, &default(), &Patch::Merge(copy))
-            .await?;
-    }
-
-    let permissions = calculate_permissions(&user_configuration);
-
-    let user_request = UserRequest {
-        username: user_configuration.username.clone(),
-        password: Some(user_configuration.password.clone()),
-        status: user_configuration
-            .enabled
-            .map_or(UserStatus::Enabled, |status| match status {
-                SftpgoUserStatus::Disabled => UserStatus::Disabled,
-                SftpgoUserStatus::Enabled => UserStatus::Enabled,
-            }),
-        permissions: permissions.clone(),
-        home_dir: user_configuration.home_dir.clone(),
-        filesystem: calculate_file_system(&user_configuration.filesystem).await?,
-        ..default()
-    };
-
-    if api_client
-        .get(&user_configuration.username)
-        .await?
-        .is_some()
-    {
-        info!("User already exists");
-
-        api_client.update(&user_request).await?;
-        info!("User updated");
-    } else {
-        info!("User does not exist, creating");
-
-        let created_user = api_client.create(&user_request).await?;
-
-        info!("User created");
-
-        let mut copy = resource.clone();
-        copy.status = Some(SftpgoUserResourceStatus {
-            last_username: user_configuration.username.clone(),
-            user_id: Some(created_user.id),
-        });
-
-        sftpgo_user_api
-            .patch_status(&name, &default(), &Patch::Merge(copy))
-            .await?;
-
-        info!("Resource status updated")
-    }
-
-    Ok(Action::await_change())
-}
 
 fn calculate_permissions(
     user_configuration: &SftpgoUserConfiguration,
@@ -165,4 +37,66 @@ fn calculate_permissions(
         }
     }
     permissions
+}
+
+#[async_trait]
+impl SftpgoResource for SftpgoUser {
+    type Status = SftpgoUserResourceStatus;
+    type Request = UserRequest;
+    type Response = UserResponse;
+
+    fn get_name(&self) -> &str {
+        &self.spec.configuration.username
+    }
+
+    async fn get_request(&self) -> Result<Self::Request, Error> {
+        let user_configuration = &self.spec.configuration;
+
+        let permissions = calculate_permissions(user_configuration);
+
+        let user_request = UserRequest {
+            username: user_configuration.username.clone(),
+            password: Some(user_configuration.password.clone()),
+            status: user_configuration
+                .enabled
+                .map_or(UserStatus::Enabled, |status| match status {
+                    SftpgoUserStatus::Disabled => UserStatus::Disabled,
+                    SftpgoUserStatus::Enabled => UserStatus::Enabled,
+                }),
+            permissions: permissions.clone(),
+            home_dir: user_configuration.home_dir.clone(),
+            filesystem: calculate_file_system(&user_configuration.filesystem).await?,
+            ..default()
+        };
+
+        Ok(user_request)
+    }
+
+    fn get_server_reference(&self) -> &ServerReference {
+        &self.spec.server_reference
+    }
+
+    fn get_status(&self) -> &Option<Self::Status> {
+        &self.status
+    }
+
+    fn set_last_name(&mut self, name: &str) {
+        if let Some(ref mut status) = self.status {
+            status.set_last_name(name);
+        } else {
+            let mut status = SftpgoUserResourceStatus::default();
+            status.set_last_name(name);
+            self.status = Some(status);
+        }
+    }
+
+    fn set_id(&mut self, id: Option<i32>) {
+        if let Some(ref mut status) = self.status {
+            status.set_id(id);
+        } else {
+            let mut status = SftpgoUserResourceStatus::default();
+            status.set_id(id);
+            self.status = Some(status);
+        }
+    }
 }

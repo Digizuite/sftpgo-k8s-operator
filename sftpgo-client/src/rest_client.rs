@@ -9,15 +9,20 @@ pub trait Named {
     fn name(&self) -> &str;
 }
 
-pub trait Creates<TResponse> {}
-pub trait CreatedFrom<TRequest> {}
+pub trait Existing {
+    fn name(&self) -> &str;
+    fn id(&self) -> i32;
+}
 
-impl<TRequest, TResponse> CreatedFrom<TRequest> for TResponse {}
+pub trait Creates<TResponse>: Named {}
+pub trait CreatedFrom<TRequest>: Existing {}
+
+impl<TRequest: Named, TResponse: Existing> CreatedFrom<TRequest> for TResponse {}
 
 #[async_trait]
 pub trait SftpgoRestClient<TRequest, TResponse>: Send + Sync
 where
-    TRequest: Serialize + Sync + Named + Creates<TResponse>,
+    TRequest: Serialize + Sync + Creates<TResponse>,
     TResponse: for<'de> Deserialize<'de> + CreatedFrom<TRequest>,
 {
     async fn create(&self, item: &TRequest) -> crate::Result<TResponse>;
@@ -34,7 +39,7 @@ pub trait EasyRestSftpgoClient<TRequest, TResponse> {
 impl<Client, TRequest, TResponse> SftpgoRestClient<TRequest, TResponse> for Client
 where
     Client: AuthorizedSftpgoClientBase + EasyRestSftpgoClient<TRequest, TResponse> + Send + Sync,
-    TRequest: Serialize + Sync + Named + Creates<TResponse>,
+    TRequest: Serialize + Sync + Creates<TResponse>,
     TResponse: for<'de> Deserialize<'de> + CreatedFrom<TRequest>,
 {
     async fn create(&self, item: &TRequest) -> crate::Result<TResponse> {

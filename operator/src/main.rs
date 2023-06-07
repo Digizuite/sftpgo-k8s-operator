@@ -12,8 +12,9 @@ extern crate pretty_env_logger;
 extern crate log;
 
 pub use crate::reconciler::Error;
-use crate::reconciler::{make_reconciler, ContextData};
+use crate::reconciler::{make_reconciler, sftpgo_api_resource_reconciler, ContextData};
 use crate::sftpgo_server_reconciler::reconcile_sftpgo_server;
+use crds::SftpgoUser;
 use k8s_openapi::api::apps::v1::Deployment;
 use k8s_openapi::api::core::v1::{Secret, Service};
 use kube::client::Client;
@@ -52,9 +53,15 @@ async fn main() -> Result<(), JoinError> {
                 .owns(services_api, watcher_config)
         },
     ));
+    // reconcilers.spawn(make_reconciler(
+    //     kubernetes_client.clone(),
+    //     user_reconciler::reconcile_user,
+    //     |c| c,
+    // ));
+
     reconcilers.spawn(make_reconciler(
         kubernetes_client.clone(),
-        user_reconciler::reconcile_user,
+        sftpgo_api_resource_reconciler::<SftpgoUser>,
         |c| c,
     ));
 

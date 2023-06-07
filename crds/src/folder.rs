@@ -1,4 +1,4 @@
-use crate::{FileSystem, ServerReference};
+use crate::{FileSystem, ServerReference, SftpgoStatus};
 use kube::CustomResource;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -39,4 +39,23 @@ pub struct SftpgoFolderSpec {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, JsonSchema, Default)]
 pub struct SftpgoFolderResourceStatus {
     last_name: String,
+    folder_id: Option<i32>,
+}
+
+impl SftpgoStatus for SftpgoFolderResourceStatus {
+    fn get_last_name(&self) -> &str {
+        &self.last_name
+    }
+
+    fn set_last_name(&mut self, name: &str) {
+        self.last_name = name.to_string();
+    }
+
+    fn get_id(&self) -> Option<i32> {
+        self.folder_id
+    }
+
+    fn set_id(&mut self, id: Option<i32>) {
+        self.folder_id = id;
+    }
 }

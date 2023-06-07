@@ -22,3 +22,4 @@ reqwest = { version = "0.11", default-features = false, features = ["json", "rus
 rand = "0.8"
 base64 = "0.21"
 anyhow = { version = "1.0", features = ["backtrace"] }
+async-trait = "0.1"

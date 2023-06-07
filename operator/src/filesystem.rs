@@ -5,9 +5,9 @@ use crds::{
     FileSystem as CrdFileSystem,
 };
 use sftpgo_client::filesystem::{
-    FileSystem as ClientFileSystem, FileSystemConfig, FileSystemConfigAzureBlobStorage,
+    FileSystem as ClientFileSystem, FileSystemConfigAzureBlobStorage,
     FileSystemConfigAzureBlobStorageAccessTier, FileSystemConfigAzureBlobStorageAuthorization,
-    FileSystemProvider, SftpgoSecret, SftpgoSecretStatus,
+    FileSystemOsConfig, FileSystemProvider, SftpgoSecret, SftpgoSecretStatus,
 };
 
 pub async fn calculate_file_system(filesystem: &CrdFileSystem) -> Result<ClientFileSystem, Error> {
@@ -17,14 +17,15 @@ pub async fn calculate_file_system(filesystem: &CrdFileSystem) -> Result<ClientF
             write_buffer_size,
         } => ClientFileSystem {
             provider: FileSystemProvider::LocalFilesystem,
-            config: FileSystemConfig::OsConfig {
-                read_buffer_size: read_buffer_size.unwrap_or(0),
-                write_buffer_size: write_buffer_size.unwrap_or(0),
-            },
+            os_config: Some(FileSystemOsConfig {
+                read_buffer_size: *read_buffer_size,
+                write_buffer_size: *write_buffer_size,
+            }),
+            ..default()
         },
         CrdFileSystem::AzureBlobStorage(blob) => ClientFileSystem {
             provider: FileSystemProvider::AzureBlobStorage,
-            config: FileSystemConfig::AzureBlobStorage(Box::new(FileSystemConfigAzureBlobStorage {
+            az_blob_config: Some(FileSystemConfigAzureBlobStorage {
                 auth: match &blob.authorization {
                     AzureBlobStorageAuthorization::SharedKey {
                         account_key,
@@ -50,10 +51,10 @@ pub async fn calculate_file_system(filesystem: &CrdFileSystem) -> Result<ClientF
                     }
                 },
                 endpoint: blob.endpoint.clone(),
-                upload_part_size: blob.upload_part_size.unwrap_or(5),
-                upload_concurrency: blob.upload_concurrency.unwrap_or(5),
-                download_part_size: blob.download_part_size.unwrap_or(5),
-                download_concurrency: blob.download_concurrency.unwrap_or(5),
+                upload_part_size: blob.upload_part_size.clone(),
+                upload_concurrency: blob.upload_concurrency.clone(),
+                download_part_size: blob.download_part_size.clone(),
+                download_concurrency: blob.download_concurrency.clone(),
                 access_tier: blob.access_tier.map(|t| match t {
                     CrdAccessTier::Hot => FileSystemConfigAzureBlobStorageAccessTier::Hot,
                     CrdAccessTier::Cool => FileSystemConfigAzureBlobStorageAccessTier::Cool,
@@ -61,7 +62,8 @@ pub async fn calculate_file_system(filesystem: &CrdFileSystem) -> Result<ClientF
                 }),
                 key_prefix: blob.key_prefix.clone(),
                 use_emulator: blob.use_emulator,
-            })),
+            }),
+            ..default()
         },
     };
 

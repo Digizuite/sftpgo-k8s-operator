@@ -116,13 +116,13 @@ spec:
                     type: object
                   mappedPath:
                     description: absolute filesystem path to use as virtual folder
+                    nullable: true
                     type: string
                   name:
                     description: unique name for this virtual folder
                     type: string
                 required:
                 - filesystem
-                - mappedPath
                 - name
                 type: object
               sftpgoServerReference:
@@ -165,6 +165,10 @@ spec:
           status:
             nullable: true
             properties:
+              folder_id:
+                format: int32
+                nullable: true
+                type: integer
               last_name:
                 type: string
             required:

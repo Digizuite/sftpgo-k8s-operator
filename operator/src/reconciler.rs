@@ -102,7 +102,7 @@ pub enum Error {
 
 #[async_trait]
 pub trait SftpgoResource {
-    type Status: SftpgoStatus;
+    type Status: SftpgoStatus + Default;
     type Request: Serialize + Sync + Creates<Self::Response>;
     type Response: for<'de> Deserialize<'de> + CreatedFrom<Self::Request>;
 
@@ -110,8 +110,27 @@ pub trait SftpgoResource {
     async fn get_request(&self) -> Result<Self::Request, Error>;
     fn get_server_reference(&self) -> &ServerReference;
     fn get_status(&self) -> &Option<Self::Status>;
-    fn set_last_name(&mut self, name: &str);
-    fn set_id(&mut self, id: Option<i32>);
+    fn get_status_mut(&mut self) -> &mut Option<Self::Status>;
+    fn set_last_name(&mut self, name: &str) {
+        let status_opt = self.get_status_mut();
+        if let Some(ref mut status) = status_opt {
+            status.set_last_name(name);
+        } else {
+            let mut status = Self::Status::default();
+            status.set_last_name(name);
+            *status_opt = Some(status);
+        }
+    }
+    fn set_id(&mut self, id: Option<i32>) {
+        let status_opt = self.get_status_mut();
+        if let Some(ref mut status) = status_opt {
+            status.set_id(id);
+        } else {
+            let mut status = Self::Status::default();
+            status.set_id(id);
+            *status_opt = Some(status);
+        }
+    }
 }
 
 pub async fn sftpgo_api_resource_reconciler<TCrd>(
@@ -145,18 +164,23 @@ where
     let mut resource = resource_api.get(&name).await?;
     let server_ref = resource.get_server_reference();
 
-    let api_client =
-        get_api_client::<TCrd::Request, TCrd::Response>(server_ref, &context, &namespace).await?;
+    let api_client = get_api_client(server_ref, &context, &namespace).await?;
 
     let sftpgo_name = resource.get_name().to_string();
     if resource.meta().deletion_timestamp.is_some() {
+        info!("Resource {} is being deleted, cleaning up", sftpgo_name);
         if let Some(status) = &resource.get_status() {
             api_client.delete(status.get_last_name()).await?;
+            info!("Deleted old name {} from SFTPGo", status.get_last_name());
         }
 
         api_client.delete(&sftpgo_name).await?;
 
+        info!("Deleted {} from SFTPGo", sftpgo_name);
+
         remove_finalizer::<TCrd>(context.kubernetes_client.clone(), &name, &namespace).await?;
+
+        info!("Removed finalizer");
 
         return Ok(Action::await_change());
     }

@@ -3,7 +3,7 @@ use crate::filesystem::calculate_file_system;
 use crate::reconciler::{Error, SftpgoResource};
 use async_trait::async_trait;
 use crds::{
-    ServerReference, SftpgoStatus, SftpgoUser, SftpgoUserConfiguration, SftpgoUserResourceStatus,
+    ServerReference, SftpgoUser, SftpgoUserConfiguration, SftpgoUserResourceStatus,
     SftpgoUserStatus, UserPermission,
 };
 use sftpgo_client::{UserRequest, UserResponse, UserStatus};
@@ -80,23 +80,7 @@ impl SftpgoResource for SftpgoUser {
         &self.status
     }
 
-    fn set_last_name(&mut self, name: &str) {
-        if let Some(ref mut status) = self.status {
-            status.set_last_name(name);
-        } else {
-            let mut status = SftpgoUserResourceStatus::default();
-            status.set_last_name(name);
-            self.status = Some(status);
-        }
-    }
-
-    fn set_id(&mut self, id: Option<i32>) {
-        if let Some(ref mut status) = self.status {
-            status.set_id(id);
-        } else {
-            let mut status = SftpgoUserResourceStatus::default();
-            status.set_id(id);
-            self.status = Some(status);
-        }
+    fn get_status_mut(&mut self) -> &mut Option<Self::Status> {
+        &mut self.status
     }
 }

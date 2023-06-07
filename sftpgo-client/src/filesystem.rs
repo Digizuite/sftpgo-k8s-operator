@@ -61,38 +61,27 @@ pub struct FileSystemConfigAzureBlobStorage {
     #[serde(flatten)]
     pub auth: FileSystemConfigAzureBlobStorageAuthorization,
     pub endpoint: Option<String>,
-    pub upload_part_size: i32,
-    pub upload_concurrency: i32,
-    pub download_part_size: i32,
-    pub download_concurrency: i32,
+    pub upload_part_size: Option<i32>,
+    pub upload_concurrency: Option<i32>,
+    pub download_part_size: Option<i32>,
+    pub download_concurrency: Option<i32>,
     pub access_tier: Option<FileSystemConfigAzureBlobStorageAccessTier>,
     pub key_prefix: Option<String>,
     pub use_emulator: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
-pub enum FileSystemConfig {
-    #[serde(rename = "osconfig")]
-    OsConfig {
-        read_buffer_size: i32,
-        write_buffer_size: i32,
-    },
-    #[serde(rename = "azblobconfig")]
-    AzureBlobStorage(Box<FileSystemConfigAzureBlobStorage>),
-}
-
-impl Default for FileSystemConfig {
-    fn default() -> Self {
-        FileSystemConfig::OsConfig {
-            write_buffer_size: 0,
-            read_buffer_size: 0,
-        }
-    }
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
+pub struct FileSystemOsConfig {
+    pub read_buffer_size: Option<i32>,
+    pub write_buffer_size: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
 pub struct FileSystem {
     pub provider: FileSystemProvider,
-    #[serde(flatten)]
-    pub config: FileSystemConfig,
+
+    #[serde(rename = "osconfig")]
+    pub os_config: Option<FileSystemOsConfig>,
+    #[serde(rename = "azblobconfig")]
+    pub az_blob_config: Option<FileSystemConfigAzureBlobStorage>,
 }

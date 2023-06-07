@@ -12,7 +12,7 @@ pub struct SftpgoFolderConfiguration {
     /// unique name for this virtual folder
     pub name: String,
     /// absolute filesystem path to use as virtual folder
-    pub mapped_path: String,
+    pub mapped_path: Option<String>,
     /// optional description
     pub description: Option<String>,
     /// Storage filesystem details

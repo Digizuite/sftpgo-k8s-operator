@@ -1,16 +1,16 @@
 use crate::client::SftpgoClientBase;
 use crate::filesystem::FileSystem;
 use crate::rest_client::{EasyRestSftpgoClient, Named};
-use crate::Result;
+use crate::{Creates, Existing, Result};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
 pub struct FolderRequest {
-    name: String,
-    mapped_path: String,
-    description: Option<String>,
-    filesystem: FileSystem,
+    pub name: String,
+    pub mapped_path: Option<String>,
+    pub description: Option<String>,
+    pub filesystem: FileSystem,
 }
 
 impl Named for FolderRequest {
@@ -19,13 +19,25 @@ impl Named for FolderRequest {
     }
 }
 
+impl Creates<FolderResponse> for FolderRequest {}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
 pub struct FolderResponse {
-    id: i32,
-    name: String,
-    mapped_path: String,
-    description: Option<String>,
-    filesystem: FileSystem,
+    pub id: i32,
+    pub name: String,
+    pub mapped_path: Option<String>,
+    pub description: Option<String>,
+    pub filesystem: FileSystem,
+}
+
+impl Existing for FolderResponse {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn id(&self) -> i32 {
+        self.id
+    }
 }
 
 impl<Client> EasyRestSftpgoClient<FolderRequest, FolderResponse> for Client

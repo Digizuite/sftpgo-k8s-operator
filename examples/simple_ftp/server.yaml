@@ -53,3 +53,21 @@ spec:
             accountKey: "A5atlwr9RV2mvwrHXZOfH41rdvJ9wrOJAVdb9NKpfebjw2t0VU7tG8/kH9lRsK00M+2gq7mknADw+AStp0RstA=="
             accountName: "dgz4120c3080183"
     name: crded-folder10
+---
+apiVersion: sftpgo.zlepper.dk/v1alpha1
+kind: SftpgoAdmin
+metadata:
+  name: sftpgo-admin
+spec:
+  sftpgoServerReference:
+    name: sftpgo
+    overrideValues:
+      url: http://localhost:50962/
+  configuration:
+    password: SuperDuperSecurePassword
+    permissions:
+    - all
+    username: "rhdh-admin"
+    description: "This is rhdh's admin user, and updated"
+    enabled: Enabled
+    email: "rhdh@digizuite.com"

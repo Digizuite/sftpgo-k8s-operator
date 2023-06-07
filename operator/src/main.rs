@@ -16,7 +16,7 @@ extern crate log;
 pub use crate::reconciler::Error;
 use crate::reconciler::{make_reconciler, sftpgo_api_resource_reconciler, ContextData};
 use crate::sftpgo_server_reconciler::reconcile_sftpgo_server;
-use crds::{SftpgoFolder, SftpgoUser};
+use crds::{SftpgoAdmin, SftpgoFolder, SftpgoUser};
 use futures::{stream, Stream, StreamExt, TryStreamExt};
 use k8s_openapi::api::apps::v1::Deployment;
 use k8s_openapi::api::core::v1::{Secret, Service};
@@ -69,6 +69,11 @@ async fn main() -> Result<(), JoinError> {
     reconcilers.spawn(make_reconciler(
         kubernetes_client.clone(),
         sftpgo_api_resource_reconciler::<SftpgoFolder>,
+        |c| c,
+    ));
+    reconcilers.spawn(make_reconciler(
+        kubernetes_client.clone(),
+        sftpgo_api_resource_reconciler::<SftpgoAdmin>,
         |c| c,
     ));
 

@@ -4,7 +4,7 @@ use crate::reconciler::{ContextData, Error, SftpgoResource};
 use async_trait::async_trait;
 use crds::{
     ServerReference, SftpgoFolder, SftpgoStatus, SftpgoUser, SftpgoUserConfiguration,
-    SftpgoUserResourceStatus, SftpgoUserStatus, UserPermission,
+    SftpgoUserStatus, UserPermission,
 };
 use kube::Api;
 use sftpgo_client::{UserRequest, UserResponse, UserStatus};
@@ -76,9 +76,21 @@ async fn get_virtual_folder_reference(
     }
 }
 
+pub trait MapEnabled<To> {
+    fn map_enabled(&self) -> To;
+}
+
+impl MapEnabled<UserStatus> for SftpgoUserStatus {
+    fn map_enabled(&self) -> UserStatus {
+        match self {
+            SftpgoUserStatus::Disabled => UserStatus::Disabled,
+            SftpgoUserStatus::Enabled => UserStatus::Enabled,
+        }
+    }
+}
+
 #[async_trait]
 impl SftpgoResource for SftpgoUser {
-    type Status = SftpgoUserResourceStatus;
     type Request = UserRequest;
     type Response = UserResponse;
 
@@ -113,10 +125,7 @@ impl SftpgoResource for SftpgoUser {
             password: Some(user_configuration.password.clone()),
             status: user_configuration
                 .enabled
-                .map_or(UserStatus::Enabled, |status| match status {
-                    SftpgoUserStatus::Disabled => UserStatus::Disabled,
-                    SftpgoUserStatus::Enabled => UserStatus::Enabled,
-                }),
+                .map_or(UserStatus::Enabled, |status| status.map_enabled()),
             permissions: permissions.clone(),
             home_dir: user_configuration.home_dir.clone(),
             filesystem: calculate_file_system(user_configuration.filesystem.as_ref()).await?,
@@ -129,13 +138,5 @@ impl SftpgoResource for SftpgoUser {
 
     fn get_server_reference(&self) -> &ServerReference {
         &self.spec.server_reference
-    }
-
-    fn get_status(&self) -> &Option<Self::Status> {
-        &self.status
-    }
-
-    fn get_status_mut(&mut self) -> &mut Option<Self::Status> {
-        &mut self.status
     }
 }

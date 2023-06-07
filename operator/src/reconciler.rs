@@ -8,6 +8,7 @@ use futures::stream::StreamExt;
 use futures::TryFuture;
 use k8s_openapi::NamespaceResourceScope;
 use kube::api::Patch;
+use kube::core::object::HasStatus;
 use kube::runtime::controller::Action;
 use kube::runtime::watcher::Config;
 use kube::runtime::Controller;
@@ -59,12 +60,21 @@ pub async fn make_reconciler<TResource, ReconcilerFut, ReconcilerFn, CustomizeFn
         .await
 }
 
-fn error_policy<TResource: Debug>(
+fn error_policy<TResource>(
     echo: Arc<TResource>,
     error: &Error,
     _context: Arc<ContextData>,
-) -> Action {
-    error!("Reconciliation error:\n{:?}.\n{:?}", error, echo);
+) -> Action
+where
+    TResource:
+        Clone + Resource + CustomResourceExt + DeserializeOwned + Debug + Send + Sync + 'static,
+{
+    error!(
+        "Reconciliation error while reconciling type {}:\n{:?}.\n{:?}",
+        TResource::crd_name(),
+        error,
+        echo
+    );
     Action::requeue(Duration::from_secs(15))
 }
 
@@ -81,6 +91,12 @@ pub enum Error {
     Kube {
         #[from]
         source: kube::Error,
+    },
+
+    #[error("Kubernetes watcher error: {source}")]
+    KubeWatcher {
+        #[from]
+        source: kube_runtime::watcher::Error,
     },
 
     #[error("Viper serializer reported error: {source}")]
@@ -105,7 +121,6 @@ pub enum Error {
 
 #[async_trait]
 pub trait SftpgoResource {
-    type Status: SftpgoStatus + Default;
     type Request: Serialize + Sync + Creates<Self::Response>;
     type Response: for<'de> Deserialize<'de> + CreatedFrom<Self::Request>;
 
@@ -118,32 +133,6 @@ pub trait SftpgoResource {
     ) -> Result<Self::Request, Error>;
 
     fn get_server_reference(&self) -> &ServerReference;
-
-    fn get_status(&self) -> &Option<Self::Status>;
-
-    fn get_status_mut(&mut self) -> &mut Option<Self::Status>;
-
-    fn set_last_name(&mut self, name: &str) {
-        let status_opt = self.get_status_mut();
-        if let Some(ref mut status) = status_opt {
-            status.set_last_name(name);
-        } else {
-            let mut status = Self::Status::default();
-            status.set_last_name(name);
-            *status_opt = Some(status);
-        }
-    }
-
-    fn set_id(&mut self, id: Option<i32>) {
-        let status_opt = self.get_status_mut();
-        if let Some(ref mut status) = status_opt {
-            status.set_id(id);
-        } else {
-            let mut status = Self::Status::default();
-            status.set_id(id);
-            *status_opt = Some(status);
-        }
-    }
 }
 
 pub async fn sftpgo_api_resource_reconciler<TCrd>(
@@ -154,6 +143,7 @@ where
     TCrd: SftpgoResource
         + Clone
         + Resource<Scope = NamespaceResourceScope>
+        + HasStatus
         + CustomResourceExt
         + DeserializeOwned
         + Serialize
@@ -162,6 +152,7 @@ where
         + Sync
         + 'static,
     TCrd::DynamicType: Debug + Unpin + Eq + Hash + Clone + Default,
+    <TCrd as HasStatus>::Status: SftpgoStatus + Default,
     AuthorizedSftpgoClient<RefreshableAdminAuthContext<SftpgoClient>>:
         EasyRestSftpgoClient<TCrd::Request, TCrd::Response>,
 {
@@ -182,7 +173,7 @@ where
     let sftpgo_name = resource.get_name().to_string();
     if resource.meta().deletion_timestamp.is_some() {
         info!("Resource {} is being deleted, cleaning up", sftpgo_name);
-        if let Some(status) = &resource.get_status() {
+        if let Some(status) = &resource.status() {
             api_client.delete(status.get_last_name()).await?;
             info!("Deleted old name {} from SFTPGo", status.get_last_name());
         }
@@ -200,17 +191,17 @@ where
 
     resource = ensure_finalizer(resource, context.kubernetes_client.clone()).await?;
 
-    if let Some(status) = &resource.get_status() {
+    if let Some(ref mut status) = &mut resource.status_mut() {
         if status.get_last_name() != sftpgo_name {
             info!(
                 "Name changed from {} to {}, deleting old resource",
                 status.get_last_name(),
-                resource.get_name()
+                sftpgo_name
             );
 
             api_client.delete(status.get_last_name()).await?;
 
-            resource.set_last_name(&sftpgo_name);
+            status.set_last_name(&sftpgo_name);
 
             resource = resource_api
                 .patch_status(&name, &default(), &Patch::Merge(resource))
@@ -221,7 +212,12 @@ where
     } else {
         info!("No status set");
 
-        resource.set_last_name(&sftpgo_name);
+        let status = resource.status_mut();
+
+        let mut s = TCrd::Status::default();
+        s.set_last_name(&sftpgo_name);
+
+        *status = Some(s);
 
         resource = resource_api
             .patch_status(&name, &default(), &Patch::Merge(resource))
@@ -242,7 +238,14 @@ where
 
         info!("Created resource {}", sftpgo_name);
 
-        resource.set_id(Some(created_resource.id()));
+        let status = resource.status_mut();
+
+        let mut s = TCrd::Status::default();
+        s.set_last_name(&sftpgo_name);
+        s.set_id(Some(created_resource.id()));
+
+        *status = Some(s);
+
         resource_api
             .patch_status(&name, &default(), &Patch::Merge(resource))
             .await?;

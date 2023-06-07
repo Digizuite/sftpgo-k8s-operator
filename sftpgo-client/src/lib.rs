@@ -1,4 +1,5 @@
 mod admin_token;
+pub mod admins;
 mod auth;
 mod client;
 mod error_response;

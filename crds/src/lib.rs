@@ -1,3 +1,4 @@
+mod admin;
 mod filesystem;
 mod folder;
 mod server;
@@ -6,6 +7,7 @@ mod sftpgo_status;
 mod user;
 mod virtual_folder_reference;
 
+pub use admin::*;
 pub use filesystem::*;
 pub use folder::*;
 pub use server::*;

@@ -2,12 +2,11 @@ use crate::filesystem::calculate_file_system;
 use crate::reconciler::{ContextData, SftpgoResource};
 use crate::Error;
 use async_trait::async_trait;
-use crds::{ServerReference, SftpgoFolder, SftpgoFolderResourceStatus};
+use crds::{ServerReference, SftpgoFolder};
 use sftpgo_client::folders::{FolderRequest, FolderResponse};
 
 #[async_trait]
 impl SftpgoResource for SftpgoFolder {
-    type Status = SftpgoFolderResourceStatus;
     type Request = FolderRequest;
     type Response = FolderResponse;
 
@@ -34,13 +33,5 @@ impl SftpgoResource for SftpgoFolder {
 
     fn get_server_reference(&self) -> &ServerReference {
         &self.spec.server_reference
-    }
-
-    fn get_status(&self) -> &Option<Self::Status> {
-        &self.status
-    }
-
-    fn get_status_mut(&mut self) -> &mut Option<Self::Status> {
-        &mut self.status
     }
 }

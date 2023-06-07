@@ -16,14 +16,6 @@ pub enum UserStatus {
     Enabled = 1,
 }
 
-// #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
-// pub struct VirtualFolder {
-//     pub name: String,
-//     pub mapped_path: String,
-//     pub description: Option<String>,
-//
-// }
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
 pub struct UserRequest {
     pub status: UserStatus,

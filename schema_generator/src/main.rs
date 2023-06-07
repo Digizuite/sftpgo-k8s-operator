@@ -1,10 +1,11 @@
-use crds::{SftpgoFolder, SftpgoServer, SftpgoUser};
+use crds::{SftpgoAdmin, SftpgoFolder, SftpgoServer, SftpgoUser};
 use kube::CustomResourceExt;
 
 fn main() {
     write_crd::<SftpgoServer>();
     write_crd::<SftpgoUser>();
     write_crd::<SftpgoFolder>();
+    write_crd::<SftpgoAdmin>();
 }
 
 fn write_crd<TResource: CustomResourceExt>() {

@@ -1,6 +1,7 @@
 use crate::error_response::Result;
 use crate::filesystem::FileSystem;
 use crate::rest_client::{Creates, EasyRestSftpgoClient, Named};
+use crate::virtual_folder_reference::VirtualFolderReference;
 use crate::{AuthorizedSftpgoClientBase, Existing};
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
@@ -45,6 +46,7 @@ pub struct UserRequest {
     pub download_data_transfer: Option<i64>,
     pub total_data_transfer: Option<i64>,
     pub filesystem: FileSystem,
+    pub virtual_folders: Option<Vec<VirtualFolderReference>>,
 }
 
 impl Named for UserRequest {
@@ -77,6 +79,7 @@ pub struct UserResponse {
     pub upload_data_transfer: Option<i64>,
     pub download_data_transfer: Option<i64>,
     pub total_data_transfer: Option<i64>,
+    pub virtual_folders: Option<Vec<VirtualFolderReference>>,
 }
 
 impl Existing for UserResponse {

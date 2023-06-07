@@ -10,12 +10,14 @@ use sftpgo_client::filesystem::{
     FileSystemOsConfig, FileSystemProvider, SftpgoSecret, SftpgoSecretStatus,
 };
 
-pub async fn calculate_file_system(filesystem: &CrdFileSystem) -> Result<ClientFileSystem, Error> {
+pub async fn calculate_file_system(
+    filesystem: Option<&CrdFileSystem>,
+) -> Result<ClientFileSystem, Error> {
     let fs = match filesystem {
-        CrdFileSystem::Local {
+        Some(CrdFileSystem::Local {
             read_buffer_size,
             write_buffer_size,
-        } => ClientFileSystem {
+        }) => ClientFileSystem {
             provider: FileSystemProvider::LocalFilesystem,
             os_config: Some(FileSystemOsConfig {
                 read_buffer_size: *read_buffer_size,
@@ -23,7 +25,7 @@ pub async fn calculate_file_system(filesystem: &CrdFileSystem) -> Result<ClientF
             }),
             ..default()
         },
-        CrdFileSystem::AzureBlobStorage(blob) => ClientFileSystem {
+        Some(CrdFileSystem::AzureBlobStorage(blob)) => ClientFileSystem {
             provider: FileSystemProvider::AzureBlobStorage,
             az_blob_config: Some(FileSystemConfigAzureBlobStorage {
                 auth: match &blob.authorization {
@@ -63,6 +65,10 @@ pub async fn calculate_file_system(filesystem: &CrdFileSystem) -> Result<ClientF
                 key_prefix: blob.key_prefix.clone(),
                 use_emulator: blob.use_emulator,
             }),
+            ..default()
+        },
+        None => ClientFileSystem {
+            provider: FileSystemProvider::LocalFilesystem,
             ..default()
         },
     };

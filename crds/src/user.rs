@@ -1,4 +1,5 @@
 use crate::sftpgo_server_reference::ServerReference;
+use crate::virtual_folder_reference::VirtualFolderReference;
 use crate::{FileSystem, SftpgoStatus};
 use kube::CustomResource;
 use schemars::JsonSchema;
@@ -72,8 +73,9 @@ pub struct SftpgoUserConfiguration {
     pub enabled: Option<SftpgoUserStatus>,
     pub global_permissions: Vec<UserPermission>,
     pub per_directory_permissions: Option<Vec<DirectoryPermission>>,
-    pub filesystem: FileSystem,
+    pub filesystem: Option<FileSystem>,
     pub home_dir: String,
+    pub virtual_folders: Option<Vec<VirtualFolderReference>>,
 }
 
 #[derive(CustomResource, Serialize, Deserialize, Debug, PartialEq, Clone, JsonSchema)]

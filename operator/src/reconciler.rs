@@ -93,6 +93,9 @@ pub enum Error {
     #[error("Invalid CRD: {0}")]
     UserInput(String),
 
+    #[error("The requested resource {0} was found, but is not yet ready.")]
+    NotReady(String),
+
     #[error("Sftpgo client reported error: {0}")]
     SftpgoRequestFailed(#[from] sftpgo_client::SftpgoError),
 
@@ -107,10 +110,19 @@ pub trait SftpgoResource {
     type Response: for<'de> Deserialize<'de> + CreatedFrom<Self::Request>;
 
     fn get_name(&self) -> &str;
-    async fn get_request(&self) -> Result<Self::Request, Error>;
+
+    async fn get_request(
+        &self,
+        context: &ContextData,
+        namespace: &String,
+    ) -> Result<Self::Request, Error>;
+
     fn get_server_reference(&self) -> &ServerReference;
+
     fn get_status(&self) -> &Option<Self::Status>;
+
     fn get_status_mut(&mut self) -> &mut Option<Self::Status>;
+
     fn set_last_name(&mut self, name: &str) {
         let status_opt = self.get_status_mut();
         if let Some(ref mut status) = status_opt {
@@ -121,6 +133,7 @@ pub trait SftpgoResource {
             *status_opt = Some(status);
         }
     }
+
     fn set_id(&mut self, id: Option<i32>) {
         let status_opt = self.get_status_mut();
         if let Some(ref mut status) = status_opt {
@@ -215,7 +228,7 @@ where
             .await?;
     }
 
-    let request = resource.get_request().await?;
+    let request = resource.get_request(&context, &namespace).await?;
 
     if api_client.get(&sftpgo_name).await?.is_some() {
         info!("Updating resource {}", sftpgo_name);

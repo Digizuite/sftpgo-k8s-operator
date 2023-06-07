@@ -26,14 +26,10 @@ spec:
     enabled: Enabled
     globalPermissions:
     - all
-    filesystem:
-      azureBlobStorage:
-        authorization:
-          sharedKey:
-            container: "sftpgo"
-            accountKey: "A5atlwr9RV2mvwrHXZOfH41rdvJ9wrOJAVdb9NKpfebjw2t0VU7tG8/kH9lRsK00M+2gq7mknADw+AStp0RstA=="
-            accountName: "dgz4120c3080183"
     homeDir: "/srv/sftpgo/data/sftpgo-user-but-better"
+    virtualFolders:
+      - name: sftpgo-folder
+        virtualPath: "/foo/bar"
   sftpgoServerReference:
     name: sftpgo
     overrideValues:

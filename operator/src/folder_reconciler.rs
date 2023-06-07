@@ -1,5 +1,5 @@
 use crate::filesystem::calculate_file_system;
-use crate::reconciler::SftpgoResource;
+use crate::reconciler::{ContextData, SftpgoResource};
 use crate::Error;
 use async_trait::async_trait;
 use crds::{ServerReference, SftpgoFolder, SftpgoFolderResourceStatus};
@@ -15,14 +15,18 @@ impl SftpgoResource for SftpgoFolder {
         &self.spec.configuration.name
     }
 
-    async fn get_request(&self) -> Result<Self::Request, Error> {
+    async fn get_request(
+        &self,
+        _context: &ContextData,
+        _namespace: &String,
+    ) -> Result<Self::Request, Error> {
         let folder_configuration = &self.spec.configuration;
 
         let request = FolderRequest {
             name: folder_configuration.name.clone(),
             description: folder_configuration.description.clone(),
             mapped_path: folder_configuration.mapped_path.clone(),
-            filesystem: calculate_file_system(&folder_configuration.filesystem).await?,
+            filesystem: calculate_file_system(Some(&folder_configuration.filesystem)).await?,
         };
 
         Ok(request)

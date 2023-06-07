@@ -29,6 +29,7 @@ spec:
                     nullable: true
                     type: string
                   filesystem:
+                    nullable: true
                     oneOf:
                     - required:
                       - local
@@ -175,8 +176,36 @@ spec:
                   username:
                     description: The username of the user
                     type: string
+                  virtualFolders:
+                    items:
+                      properties:
+                        name:
+                          description: The kubernetes resource name of the virtual folder
+                          type: string
+                        namespace:
+                          description: The kubernetes namespace the folder is defined in, if different from the namespace of this resource.
+                          nullable: true
+                          type: string
+                        quotaFiles:
+                          description: Quota as number of files. 0 means unlimited, , -1 means included in user quota. Please note that quota is updated if files are added/removed via SFTPGo otherwise a quota scan or a manual quota update is needed
+                          format: int32
+                          nullable: true
+                          type: integer
+                        quotaSize:
+                          description: Quota as size in bytes. 0 means unlimited, -1 means included in user quota. Please note that quota is updated if files are added/removed via SFTPGo otherwise a quota scan or a manual quota update is needed
+                          format: int64
+                          nullable: true
+                          type: integer
+                        virtualPath:
+                          description: The path to use inside the virtual folder.
+                          type: string
+                      required:
+                      - name
+                      - virtualPath
+                      type: object
+                    nullable: true
+                    type: array
                 required:
-                - filesystem
                 - globalPermissions
                 - homeDir
                 - password

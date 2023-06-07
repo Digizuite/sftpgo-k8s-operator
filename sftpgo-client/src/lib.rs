@@ -6,6 +6,7 @@ pub mod filesystem;
 pub mod folders;
 mod rest_client;
 pub mod users;
+pub mod virtual_folder_reference;
 
 pub use admin_token::*;
 pub use auth::AuthContext;

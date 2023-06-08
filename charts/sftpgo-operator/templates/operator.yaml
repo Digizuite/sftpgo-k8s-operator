@@ -66,6 +66,8 @@ rules:
     resources:
       - sftpgoservers
       - sftpgousers
+      - sftpgoadmins
+      - sftpgofolders
     verbs:
       - create
       - get
@@ -79,6 +81,8 @@ rules:
     resources:
       - sftpgoservers/finalizers
       - sftpgousers/finalizers
+      - sftpgoadmins/finalizers
+      - sftpgofolders/finalizers
     verbs:
       - update
       - patch
@@ -87,6 +91,8 @@ rules:
     resources:
       - sftpgoservers/status
       - sftpgousers/status
+      - sftpgoadmins/status
+      - sftpgofolders/status
     verbs:
       - get
       - update
@@ -108,6 +114,8 @@ rules:
     resources:
       - sftpgoservers
       - sftpgousers
+      - sftpgoadmins
+      - sftpgofolders
     verbs:
       - get
       - list

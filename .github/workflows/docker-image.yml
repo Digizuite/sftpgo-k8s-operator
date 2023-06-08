@@ -8,9 +8,23 @@ on:
       - "master"
     tags:
       - "v*.*.*"
+    paths:
+      - "crds/**"
+      - "operator/**"
+      - "schema_generator/**"
+      - "sftpgo-client/**"
+      - "Dockerfile"
+      - "Cargo.*"
   pull_request:
     branches:
       - "master"
+    paths:
+      - "crds/**"
+      - "operator/**"
+      - "schema_generator/**"
+      - "sftpgo-client/**"
+      - "Dockerfile"
+      - "Cargo.*"
 
 jobs:
   docker:

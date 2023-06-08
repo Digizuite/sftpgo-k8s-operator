@@ -606,9 +606,11 @@ pub struct SftpgoConfiguration {
     derive = "PartialEq",
     namespaced
 )]
+#[serde(rename_all = "camelCase")]
 pub struct SftpgoServerSpec {
     pub configuration: Option<SftpgoConfiguration>,
     pub replicas: Option<i32>,
     pub image: Option<String>,
     pub labels: Option<BTreeMap<String, String>>,
+    pub node_selector: Option<BTreeMap<String, String>>,
 }

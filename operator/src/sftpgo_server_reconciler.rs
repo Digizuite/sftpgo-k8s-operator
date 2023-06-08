@@ -279,6 +279,7 @@ impl DeploymentController {
         };
         let expected_pod_spec = PodSpec {
             containers: vec![expected_container.clone()],
+            node_selector: self.resource.node_selector.clone(),
             ..default()
         };
         let deployment_name = self.get_deployment_name();

@@ -1371,6 +1371,11 @@ spec:
                   type: string
                 nullable: true
                 type: object
+              nodeSelector:
+                additionalProperties:
+                  type: string
+                nullable: true
+                type: object
               replicas:
                 format: int32
                 nullable: true

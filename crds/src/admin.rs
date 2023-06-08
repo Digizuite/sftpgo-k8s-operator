@@ -3,7 +3,6 @@ use crate::{SftpgoStatus, SftpgoUserStatus};
 use kube::CustomResource;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -72,7 +71,7 @@ pub struct SftpgoAdminConfiguration {
     pub password: String,
     pub enabled: Option<SftpgoUserStatus>,
     pub email: Option<String>,
-    pub permissions: HashSet<AdminPermission>,
+    pub permissions: Vec<AdminPermission>,
     /// If set the admin can only administer users with the same role. Role admins cannot have the
     /// following permissions: "manage_admins", "manage_apikeys", "manage_system",
     /// "manage_event_rules", "manage_roles", "manage_ip_lists"

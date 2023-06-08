@@ -64,7 +64,6 @@ spec:
                       - manage_ip_lists
                       type: string
                     type: array
-                    uniqueItems: true
                   role:
                     description: 'If set the admin can only administer users with the same role. Role admins cannot have the following permissions: "manage_admins", "manage_apikeys", "manage_system", "manage_event_rules", "manage_roles", "manage_ip_lists"'
                     nullable: true

@@ -10,3 +10,4 @@ name: sftpgo-operator
 sources:
   - https://github.com/zlepper/sftpgo-k8s-operator
 version: 0.1.0
+icon: https://sftpgo.com/assets/img/logo.png

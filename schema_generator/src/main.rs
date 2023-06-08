@@ -12,7 +12,7 @@ fn write_crd<TResource: CustomResourceExt>() {
     let crd = TResource::crd();
 
     let file_path = format!(
-        "chart/templates/{}.yaml",
+        "chart/sftpgo-operator/templates/{}.yaml",
         crd.metadata.name.clone().unwrap()
     );
 

@@ -9,5 +9,5 @@ kubeVersion: ">= 1.25.0-0"
 name: sftpgo-operator
 sources:
   - https://github.com/digizuite/sftpgo-k8s-operator
-version: 0.1.6
+version: 0.1.7
 icon: https://sftpgo.com/assets/img/logo.png

@@ -86,6 +86,7 @@ pub struct SftpgoAdminConfiguration {
     plural = "sftpgoadmins",
     derive = "PartialEq",
     status = "SftpgoAdminResourceStatus",
+    printcolumn = r#"{"name":"Admin id", "type":"string", "description":"Id of the admin", "jsonPath":".status.admin_id"}"#,
     namespaced
 )]
 #[serde(rename_all = "camelCase")]

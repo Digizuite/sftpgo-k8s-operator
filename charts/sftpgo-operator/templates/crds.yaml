@@ -1404,7 +1404,11 @@ spec:
     singular: sftpgouser
   scope: Namespaced
   versions:
-  - additionalPrinterColumns: []
+  - additionalPrinterColumns:
+    - description: Id of the user
+      jsonPath: .status.user_id
+      name: User id
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -1868,7 +1872,11 @@ spec:
     singular: sftpgoadmin
   scope: Namespaced
   versions:
-  - additionalPrinterColumns: []
+  - additionalPrinterColumns:
+    - description: Id of the admin
+      jsonPath: .status.admin_id
+      name: Admin id
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:

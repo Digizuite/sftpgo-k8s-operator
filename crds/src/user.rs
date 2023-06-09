@@ -86,6 +86,7 @@ pub struct SftpgoUserConfiguration {
     plural = "sftpgousers",
     derive = "PartialEq",
     status = "SftpgoUserResourceStatus",
+    printcolumn = r#"{"name":"User id", "type":"string", "description":"Id of the user", "jsonPath":".status.user_id"}"#,
     namespaced
 )]
 #[serde(rename_all = "camelCase")]

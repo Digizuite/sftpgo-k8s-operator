@@ -141,6 +141,8 @@ where
         ));
     };
 
+    trace!("Using connection info: {:?}", connection_info);
+
     let c = context
         .sftpgo_client
         .get_client(&connection_info.uid, connection_info.url.clone())
@@ -153,6 +155,7 @@ where
     Ok(authorized_client)
 }
 
+#[derive(Debug)]
 struct ConnectionInfo {
     url: Url,
     username: String,

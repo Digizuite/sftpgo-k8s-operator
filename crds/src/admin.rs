@@ -80,7 +80,7 @@ pub struct SftpgoAdminConfiguration {
 
 #[derive(CustomResource, Serialize, Deserialize, Debug, PartialEq, Clone, JsonSchema)]
 #[kube(
-    group = "sftpgo.zlepper.dk",
+    group = "sftpgo.digizuite.com",
     version = "v1alpha1",
     kind = "SftpgoAdmin",
     plural = "sftpgoadmins",

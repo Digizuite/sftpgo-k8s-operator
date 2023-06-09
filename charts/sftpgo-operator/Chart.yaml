@@ -1,13 +1,13 @@
 apiVersion: v2
 appVersion: 2.5.0
 description: An operator for Managing Sftpgo
-home: https://github.com/zlepper/sftpgo-k8s-operator
+home: https://github.com/digizuite/sftpgo-k8s-operator
 keywords:
   - operator
   - sftpgo
 kubeVersion: ">= 1.25.0-0"
 name: sftpgo-operator
 sources:
-  - https://github.com/zlepper/sftpgo-k8s-operator
-version: 0.1.4
+  - https://github.com/digizuite/sftpgo-k8s-operator
+version: 0.1.5
 icon: https://sftpgo.com/assets/img/logo.png

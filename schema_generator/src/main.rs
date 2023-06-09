@@ -1,22 +1,22 @@
 use crds::{SftpgoAdmin, SftpgoFolder, SftpgoServer, SftpgoUser};
 use kube::CustomResourceExt;
+use std::fs::File;
+use std::io::Write;
 
 fn main() {
-    write_crd::<SftpgoServer>();
-    write_crd::<SftpgoUser>();
-    write_crd::<SftpgoFolder>();
-    write_crd::<SftpgoAdmin>();
+    let file_path = "charts/sftpgo-operator/templates/crds.yaml";
+
+    let mut file = File::create(file_path).expect("Failed to create crd yaml file on disk");
+
+    write_crd::<SftpgoServer>(&mut file);
+    write_crd::<SftpgoUser>(&mut file);
+    write_crd::<SftpgoFolder>(&mut file);
+    write_crd::<SftpgoAdmin>(&mut file);
 }
 
-fn write_crd<TResource: CustomResourceExt>() {
+fn write_crd<TResource: CustomResourceExt>(mut file: &mut File) {
     let crd = TResource::crd();
 
-    let file_path = format!(
-        "charts/sftpgo-operator/templates/{}.yaml",
-        crd.metadata.name.clone().unwrap()
-    );
-
-    let file = std::fs::File::create(file_path).expect("Failed to create crd yaml file on disk");
-
-    serde_yaml::to_writer(file, &crd).expect("Failed to write CRD to disk");
+    serde_yaml::to_writer(&mut file, &crd).expect("Failed to write CRD to disk");
+    write!(file, "\n---\n").expect("Failed to write CRD to disk");
 }

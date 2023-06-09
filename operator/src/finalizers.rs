@@ -19,7 +19,7 @@ where
 
     let finalizer = json!({
         "metadata": {
-            "finalizers": ["sftpgo.zlepper.dk/finalizer"]
+            "finalizers": ["sftpgo.digizuite.com/finalizer"]
         }
     });
 

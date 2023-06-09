@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: sftpgoservers.sftpgo.zlepper.dk
+  name: sftpgoservers.sftpgo.digizuite.com
 spec:
-  group: sftpgo.zlepper.dk
+  group: sftpgo.digizuite.com
   names:
     categories: []
     kind: SftpgoServer
@@ -1388,3 +1388,604 @@ spec:
     served: true
     storage: true
     subresources: {}
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: sftpgousers.sftpgo.digizuite.com
+spec:
+  group: sftpgo.digizuite.com
+  names:
+    categories: []
+    kind: SftpgoUser
+    plural: sftpgousers
+    shortNames: []
+    singular: sftpgouser
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns: []
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Auto-generated derived type for SftpgoUserSpec via `CustomResource`
+        properties:
+          spec:
+            properties:
+              configuration:
+                properties:
+                  enabled:
+                    enum:
+                    - Disabled
+                    - Enabled
+                    nullable: true
+                    type: string
+                  filesystem:
+                    nullable: true
+                    oneOf:
+                    - required:
+                      - local
+                    - required:
+                      - azureBlobStorage
+                    properties:
+                      azureBlobStorage:
+                        properties:
+                          accessTier:
+                            enum:
+                            - Hot
+                            - Cool
+                            - Archive
+                            nullable: true
+                            type: string
+                          authorization:
+                            oneOf:
+                            - required:
+                              - sharedKey
+                            - required:
+                              - sharedAccessSignatureUrl
+                            properties:
+                              sharedAccessSignatureUrl:
+                                type: string
+                              sharedKey:
+                                properties:
+                                  accountKey:
+                                    type: string
+                                  accountName:
+                                    type: string
+                                  container:
+                                    description: The name of the container to use. Sftpgo does not create this automatically, so make sure it exists before using it here.
+                                    type: string
+                                required:
+                                - accountKey
+                                - accountName
+                                - container
+                                type: object
+                            type: object
+                          downloadConcurrency:
+                            description: the number of parts to download in parallel. If this value is not set, the default value (5) will be used
+                            format: int32
+                            nullable: true
+                            type: integer
+                          downloadPartSize:
+                            description: the buffer size (in MB) to use for multipart downloads. If this value is not set, the default value (5MB) will be used.
+                            format: int32
+                            nullable: true
+                            type: integer
+                          endpoint:
+                            description: optional endpoint. Default is "blob.core.windows.net". If you use the emulator the endpoint must include the protocol, for example "http://127.0.0.1:10000"
+                            nullable: true
+                            type: string
+                          keyPrefix:
+                            description: key_prefix is similar to a chroot directory for a local filesystem. If specified the user will only see contents that starts with this prefix and so you can restrict access to a specific virtual folder. The prefix, if not empty, must not start with "/" and must end with "/". If empty the whole container contents will be available
+                            nullable: true
+                            type: string
+                          uploadConcurrency:
+                            description: the number of parts to upload in parallel. If this value is not set, the default value (5) will be used
+                            format: int32
+                            nullable: true
+                            type: integer
+                          uploadPartSize:
+                            description: the buffer size (in MB) to use for multipart uploads. If this value is not set, the default value (5MB) will be used.
+                            format: int32
+                            nullable: true
+                            type: integer
+                          useEmulator:
+                            nullable: true
+                            type: boolean
+                        required:
+                        - authorization
+                        type: object
+                      local:
+                        properties:
+                          readBufferSize:
+                            format: int32
+                            nullable: true
+                            type: integer
+                          writeBufferSize:
+                            format: int32
+                            nullable: true
+                            type: integer
+                        type: object
+                    type: object
+                  globalPermissions:
+                    items:
+                      enum:
+                      - all
+                      - list
+                      - download
+                      - upload
+                      - overwrite
+                      - create_dirs
+                      - rename
+                      - rename_files
+                      - rename_dirs
+                      - delete
+                      - delete_files
+                      - delete_dirs
+                      - create_symlinks
+                      - chmod
+                      - chown
+                      - chtimes
+                      type: string
+                    type: array
+                  homeDir:
+                    type: string
+                  password:
+                    description: Password of the user. Changes to this field will not propagate to the user after creation as we have no way of retrieving the password from the server.
+                    type: string
+                  perDirectoryPermissions:
+                    items:
+                      properties:
+                        path:
+                          type: string
+                        permissions:
+                          items:
+                            enum:
+                            - all
+                            - list
+                            - download
+                            - upload
+                            - overwrite
+                            - create_dirs
+                            - rename
+                            - rename_files
+                            - rename_dirs
+                            - delete
+                            - delete_files
+                            - delete_dirs
+                            - create_symlinks
+                            - chmod
+                            - chown
+                            - chtimes
+                            type: string
+                          type: array
+                      required:
+                      - path
+                      - permissions
+                      type: object
+                    nullable: true
+                    type: array
+                  username:
+                    description: The username of the user
+                    type: string
+                  virtualFolders:
+                    items:
+                      properties:
+                        name:
+                          description: The kubernetes resource name of the virtual folder
+                          type: string
+                        namespace:
+                          description: The kubernetes namespace the folder is defined in, if different from the namespace of this resource.
+                          nullable: true
+                          type: string
+                        quotaFiles:
+                          description: Quota as number of files. 0 means unlimited, , -1 means included in user quota. Please note that quota is updated if files are added/removed via SFTPGo otherwise a quota scan or a manual quota update is needed
+                          format: int32
+                          nullable: true
+                          type: integer
+                        quotaSize:
+                          description: Quota as size in bytes. 0 means unlimited, -1 means included in user quota. Please note that quota is updated if files are added/removed via SFTPGo otherwise a quota scan or a manual quota update is needed
+                          format: int64
+                          nullable: true
+                          type: integer
+                        virtualPath:
+                          description: The path to use inside the virtual folder.
+                          type: string
+                      required:
+                      - name
+                      - virtualPath
+                      type: object
+                    nullable: true
+                    type: array
+                required:
+                - globalPermissions
+                - homeDir
+                - password
+                - username
+                type: object
+              disconnectOnChange:
+                description: This way you force the user to login again, if connected, and so to use the new configuration
+                nullable: true
+                type: boolean
+              sftpgoServerReference:
+                properties:
+                  connectionSecret:
+                    nullable: true
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        nullable: true
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  name:
+                    nullable: true
+                    type: string
+                  namespace:
+                    nullable: true
+                    type: string
+                  overrideValues:
+                    nullable: true
+                    properties:
+                      password:
+                        nullable: true
+                        type: string
+                      url:
+                        nullable: true
+                        type: string
+                      username:
+                        nullable: true
+                        type: string
+                    type: object
+                type: object
+            required:
+            - configuration
+            - sftpgoServerReference
+            type: object
+          status:
+            nullable: true
+            properties:
+              last_username:
+                type: string
+              user_id:
+                format: int32
+                nullable: true
+                type: integer
+            required:
+            - last_username
+            type: object
+        required:
+        - spec
+        title: SftpgoUser
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: sftpgofolders.sftpgo.digizuite.com
+spec:
+  group: sftpgo.digizuite.com
+  names:
+    categories: []
+    kind: SftpgoFolder
+    plural: sftpgofolders
+    shortNames: []
+    singular: sftpgofolder
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns: []
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Auto-generated derived type for SftpgoFolderSpec via `CustomResource`
+        properties:
+          spec:
+            properties:
+              configuration:
+                description: Defines the filesystem for the virtual folder and the used quota limits. The same folder can be shared among multiple users and each user can have different quota limits or a different virtual path.
+                properties:
+                  description:
+                    description: optional description
+                    nullable: true
+                    type: string
+                  filesystem:
+                    description: Storage filesystem details
+                    oneOf:
+                    - required:
+                      - local
+                    - required:
+                      - azureBlobStorage
+                    properties:
+                      azureBlobStorage:
+                        properties:
+                          accessTier:
+                            enum:
+                            - Hot
+                            - Cool
+                            - Archive
+                            nullable: true
+                            type: string
+                          authorization:
+                            oneOf:
+                            - required:
+                              - sharedKey
+                            - required:
+                              - sharedAccessSignatureUrl
+                            properties:
+                              sharedAccessSignatureUrl:
+                                type: string
+                              sharedKey:
+                                properties:
+                                  accountKey:
+                                    type: string
+                                  accountName:
+                                    type: string
+                                  container:
+                                    description: The name of the container to use. Sftpgo does not create this automatically, so make sure it exists before using it here.
+                                    type: string
+                                required:
+                                - accountKey
+                                - accountName
+                                - container
+                                type: object
+                            type: object
+                          downloadConcurrency:
+                            description: the number of parts to download in parallel. If this value is not set, the default value (5) will be used
+                            format: int32
+                            nullable: true
+                            type: integer
+                          downloadPartSize:
+                            description: the buffer size (in MB) to use for multipart downloads. If this value is not set, the default value (5MB) will be used.
+                            format: int32
+                            nullable: true
+                            type: integer
+                          endpoint:
+                            description: optional endpoint. Default is "blob.core.windows.net". If you use the emulator the endpoint must include the protocol, for example "http://127.0.0.1:10000"
+                            nullable: true
+                            type: string
+                          keyPrefix:
+                            description: key_prefix is similar to a chroot directory for a local filesystem. If specified the user will only see contents that starts with this prefix and so you can restrict access to a specific virtual folder. The prefix, if not empty, must not start with "/" and must end with "/". If empty the whole container contents will be available
+                            nullable: true
+                            type: string
+                          uploadConcurrency:
+                            description: the number of parts to upload in parallel. If this value is not set, the default value (5) will be used
+                            format: int32
+                            nullable: true
+                            type: integer
+                          uploadPartSize:
+                            description: the buffer size (in MB) to use for multipart uploads. If this value is not set, the default value (5MB) will be used.
+                            format: int32
+                            nullable: true
+                            type: integer
+                          useEmulator:
+                            nullable: true
+                            type: boolean
+                        required:
+                        - authorization
+                        type: object
+                      local:
+                        properties:
+                          readBufferSize:
+                            format: int32
+                            nullable: true
+                            type: integer
+                          writeBufferSize:
+                            format: int32
+                            nullable: true
+                            type: integer
+                        type: object
+                    type: object
+                  mappedPath:
+                    description: absolute filesystem path to use as virtual folder
+                    nullable: true
+                    type: string
+                  name:
+                    description: unique name for this virtual folder
+                    type: string
+                required:
+                - filesystem
+                - name
+                type: object
+              sftpgoServerReference:
+                properties:
+                  connectionSecret:
+                    nullable: true
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        nullable: true
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  name:
+                    nullable: true
+                    type: string
+                  namespace:
+                    nullable: true
+                    type: string
+                  overrideValues:
+                    nullable: true
+                    properties:
+                      password:
+                        nullable: true
+                        type: string
+                      url:
+                        nullable: true
+                        type: string
+                      username:
+                        nullable: true
+                        type: string
+                    type: object
+                type: object
+            required:
+            - configuration
+            - sftpgoServerReference
+            type: object
+          status:
+            nullable: true
+            properties:
+              folder_id:
+                format: int32
+                nullable: true
+                type: integer
+              last_name:
+                type: string
+            required:
+            - last_name
+            type: object
+        required:
+        - spec
+        title: SftpgoFolder
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: sftpgoadmins.sftpgo.digizuite.com
+spec:
+  group: sftpgo.digizuite.com
+  names:
+    categories: []
+    kind: SftpgoAdmin
+    plural: sftpgoadmins
+    shortNames: []
+    singular: sftpgoadmin
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns: []
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Auto-generated derived type for SftpgoAdminSpec via `CustomResource`
+        properties:
+          spec:
+            properties:
+              configuration:
+                properties:
+                  description:
+                    description: optional description, for example the admin full name
+                    nullable: true
+                    type: string
+                  email:
+                    nullable: true
+                    type: string
+                  enabled:
+                    enum:
+                    - Disabled
+                    - Enabled
+                    nullable: true
+                    type: string
+                  password:
+                    description: Password of the user. Changes to this field will not propagate to the user after creation as we have no way of retrieving the password from the server.
+                    type: string
+                  permissions:
+                    items:
+                      enum:
+                      - all
+                      - add_users
+                      - edit_users
+                      - del_users
+                      - view_users
+                      - view_conns
+                      - close_conns
+                      - view_status
+                      - manage_admins
+                      - manage_groups
+                      - manage_apikeys
+                      - quota_scans
+                      - manage_system
+                      - manage_defender
+                      - view_defender
+                      - retention_checks
+                      - metadata_checks
+                      - view_events
+                      - manage_event_rules
+                      - manage_roles
+                      - manage_ip_lists
+                      type: string
+                    type: array
+                  role:
+                    description: 'If set the admin can only administer users with the same role. Role admins cannot have the following permissions: "manage_admins", "manage_apikeys", "manage_system", "manage_event_rules", "manage_roles", "manage_ip_lists"'
+                    nullable: true
+                    type: string
+                  username:
+                    description: The username of the user
+                    type: string
+                required:
+                - password
+                - permissions
+                - username
+                type: object
+              sftpgoServerReference:
+                properties:
+                  connectionSecret:
+                    nullable: true
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        nullable: true
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  name:
+                    nullable: true
+                    type: string
+                  namespace:
+                    nullable: true
+                    type: string
+                  overrideValues:
+                    nullable: true
+                    properties:
+                      password:
+                        nullable: true
+                        type: string
+                      url:
+                        nullable: true
+                        type: string
+                      username:
+                        nullable: true
+                        type: string
+                    type: object
+                type: object
+            required:
+            - configuration
+            - sftpgoServerReference
+            type: object
+          status:
+            nullable: true
+            properties:
+              admin_id:
+                format: int32
+                nullable: true
+                type: integer
+              last_username:
+                type: string
+            required:
+            - last_username
+            type: object
+        required:
+        - spec
+        title: SftpgoAdmin
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+
+---

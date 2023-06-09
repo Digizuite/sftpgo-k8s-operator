@@ -1,4 +1,4 @@
-apiVersion: sftpgo.zlepper.dk/v1alpha1
+apiVersion: sftpgo.digizuite.com/v1alpha1
 kind: SftpgoServer
 metadata:
   name: sftpgo
@@ -15,7 +15,7 @@ spec:
         - port: 2222
 
 ---
-apiVersion: sftpgo.zlepper.dk/v1alpha1
+apiVersion: sftpgo.digizuite.com/v1alpha1
 kind: SftpgoUser
 metadata:
   name: sftpgo-user
@@ -35,7 +35,7 @@ spec:
     overrideValues:
       url: http://localhost:50962/
 ---
-apiVersion: sftpgo.zlepper.dk/v1alpha1
+apiVersion: sftpgo.digizuite.com/v1alpha1
 kind: SftpgoFolder
 metadata:
   name: sftpgo-folder
@@ -54,7 +54,7 @@ spec:
             accountName: "dgz4120c3080183"
     name: crded-folder10
 ---
-apiVersion: sftpgo.zlepper.dk/v1alpha1
+apiVersion: sftpgo.digizuite.com/v1alpha1
 kind: SftpgoAdmin
 metadata:
   name: sftpgo-admin

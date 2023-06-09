@@ -3,7 +3,7 @@ use crate::client::SftpgoClientBase;
 use crate::error_response::{handle_response, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use log::debug;
+use log::{debug, trace};
 use reqwest::header::AUTHORIZATION;
 use serde::Deserialize;
 use std::sync::Arc;
@@ -24,6 +24,11 @@ pub trait AdminAccessTokenClient: SftpgoClientBase {
     ) -> Result<AdminAccessToken> {
         let url = self.url_for("/api/v2/token")?;
         let auth_header_value = create_basic_auth_header(username, password);
+        trace!(
+            "Sending auth token request to {} with auth header {}",
+            url,
+            auth_header_value
+        );
         let res = self
             .get_client()
             .get(url)

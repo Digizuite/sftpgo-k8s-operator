@@ -73,6 +73,7 @@ pub struct FileSystemAzureBlobStorage {
     /// user will only see contents that starts with this prefix and so you can restrict access
     /// to a specific virtual folder. The prefix, if not empty, must not start with "/" and must
     /// end with "/". If empty the whole container contents will be available
+    #[schemars(regex(pattern = r"^[^\/].+\/$"))]
     pub key_prefix: Option<String>,
 
     pub use_emulator: Option<bool>,

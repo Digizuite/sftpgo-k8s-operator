@@ -1478,6 +1478,7 @@ spec:
                           keyPrefix:
                             description: key_prefix is similar to a chroot directory for a local filesystem. If specified the user will only see contents that starts with this prefix and so you can restrict access to a specific virtual folder. The prefix, if not empty, must not start with "/" and must end with "/". If empty the whole container contents will be available
                             nullable: true
+                            pattern: ^[^\/].+\/$
                             type: string
                           uploadConcurrency:
                             description: the number of parts to upload in parallel. If this value is not set, the default value (5) will be used
@@ -1753,6 +1754,7 @@ spec:
                           keyPrefix:
                             description: key_prefix is similar to a chroot directory for a local filesystem. If specified the user will only see contents that starts with this prefix and so you can restrict access to a specific virtual folder. The prefix, if not empty, must not start with "/" and must end with "/". If empty the whole container contents will be available
                             nullable: true
+                            pattern: ^[^\/].+\/$
                             type: string
                           uploadConcurrency:
                             description: the number of parts to upload in parallel. If this value is not set, the default value (5) will be used

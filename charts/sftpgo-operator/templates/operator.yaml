@@ -163,7 +163,7 @@ spec:
       containers:
         - name: operator
           image: ghcr.io/digizuite/sftpgo-k8s-operator:master
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           env:
             - name: RUST_LOG
               value: "sftpgo_operator=info,sftpgo_client=info"

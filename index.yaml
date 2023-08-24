@@ -3,6 +3,23 @@ entries:
   sftpgo-operator:
   - apiVersion: v2
     appVersion: 2.5.0
+    created: "2023-08-24T10:17:21.519789518Z"
+    description: An operator for Managing Sftpgo
+    digest: c266f2f25314b254a7f1cf0392654ca2b8a6c8b4a5c728eb9a3b8492f6a4a775
+    home: https://github.com/digizuite/sftpgo-k8s-operator
+    icon: https://sftpgo.com/assets/img/logo.png
+    keywords:
+    - operator
+    - sftpgo
+    kubeVersion: '>= 1.25.0-0'
+    name: sftpgo-operator
+    sources:
+    - https://github.com/digizuite/sftpgo-k8s-operator
+    urls:
+    - https://github.com/Digizuite/sftpgo-k8s-operator/releases/download/sftpgo-operator-0.1.9/sftpgo-operator-0.1.9.tgz
+    version: 0.1.9
+  - apiVersion: v2
+    appVersion: 2.5.0
     created: "2023-08-24T10:10:16.437183282Z"
     description: An operator for Managing Sftpgo
     digest: 742c9041fd86d008ec5054d4c2262ab5d8abc0b49bd09f202af2be677bcbaa7b
@@ -154,4 +171,4 @@ entries:
     urls:
     - https://github.com/zlepper/sftpgo-k8s-operator/releases/download/sftpgo-operator-0.1.0/sftpgo-operator-0.1.0.tgz
     version: 0.1.0
-generated: "2023-08-24T10:10:16.437224783Z"
+generated: "2023-08-24T10:17:21.519825818Z"

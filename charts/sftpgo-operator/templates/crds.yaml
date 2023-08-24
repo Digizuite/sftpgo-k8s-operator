@@ -1380,6 +1380,15 @@ spec:
                 format: int32
                 nullable: true
                 type: integer
+              serviceOverrides:
+                nullable: true
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    nullable: true
+                    type: object
+                type: object
             type: object
         required:
         - spec

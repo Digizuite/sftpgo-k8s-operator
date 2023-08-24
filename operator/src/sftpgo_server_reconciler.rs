@@ -200,6 +200,11 @@ impl DeploymentController {
                 namespace: Some(namespace.to_string()),
                 owner_references: Some(vec![self.owner_reference.clone()]),
                 labels: Some(self.get_labels()),
+                annotations: self
+                    .resource
+                    .service_overrides
+                    .as_ref()
+                    .and_then(|o| o.annotations.clone()),
                 ..default()
             },
             spec: Some(ServiceSpec {

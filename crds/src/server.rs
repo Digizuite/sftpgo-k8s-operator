@@ -597,6 +597,11 @@ pub struct SftpgoConfiguration {
     pub smtp: Option<Smtp>,
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ServiceOverrides {
+    pub annotations: Option<BTreeMap<String, String>>,
+}
+
 #[derive(CustomResource, Serialize, Deserialize, Debug, PartialEq, Clone, JsonSchema)]
 #[kube(
     group = "sftpgo.digizuite.com",
@@ -613,4 +618,5 @@ pub struct SftpgoServerSpec {
     pub image: Option<String>,
     pub labels: Option<BTreeMap<String, String>>,
     pub node_selector: Option<BTreeMap<String, String>>,
+    pub service_overrides: Option<ServiceOverrides>,
 }

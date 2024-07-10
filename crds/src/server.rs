@@ -2,6 +2,7 @@ use kube::CustomResource;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use k8s_openapi::api::core::v1::LocalObjectReference;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum UploadMode {
@@ -616,7 +617,7 @@ pub struct SftpgoServerSpec {
     pub configuration: Option<SftpgoConfiguration>,
     pub replicas: Option<i32>,
     pub image: Option<String>,
-    pub image_pull_secrets: Option<Vec<String>>,
+    pub image_pull_secrets: Option<Vec<LocalObjectReference>>,
     pub labels: Option<BTreeMap<String, String>>,
     pub node_selector: Option<BTreeMap<String, String>>,
     pub service_overrides: Option<ServiceOverrides>,

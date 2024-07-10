@@ -1366,6 +1366,11 @@ spec:
               image:
                 nullable: true
                 type: string
+              imagePullSecrets:
+                items:
+                  type: string
+                nullable: true
+                type: array
               labels:
                 additionalProperties:
                   type: string

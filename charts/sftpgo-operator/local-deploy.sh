@@ -1,2 +1,2 @@
-helm upgrade sftpgo-operator . -n sftpgo-operator --set operator.enable=false --install --create-namespace
+helm upgrade sftpgo-operator . -n sftpgo --set operator.enable=false --install --create-namespace
 

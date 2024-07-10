@@ -4,10 +4,7 @@ use crate::viper_environment_serializer::ViperEnvironmentSerializer;
 use crate::{default, ContextData};
 use crds::{SftpgoServer, SftpgoServerSpec};
 use k8s_openapi::api::apps::v1::{Deployment, DeploymentSpec};
-use k8s_openapi::api::core::v1::{
-    Container, ContainerPort, EnvVar, EnvVarSource, PodSpec, PodTemplateSpec, Secret,
-    SecretKeySelector, Service, ServicePort, ServiceSpec,
-};
+use k8s_openapi::api::core::v1::{Container, ContainerPort, EnvVar, EnvVarSource, LocalObjectReference, PodSpec, PodTemplateSpec, Secret, SecretKeySelector, Service, ServicePort, ServiceSpec};
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::{LabelSelector, ObjectMeta, OwnerReference};
 use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
 use kube::api::{Patch, PatchParams};
@@ -284,6 +281,9 @@ impl DeploymentController {
         };
         let expected_pod_spec = PodSpec {
             containers: vec![expected_container.clone()],
+            image_pull_secrets: self.resource.image_pull_secrets.as_ref().map(|ss| ss.iter().map(|s| LocalObjectReference {
+                name: Some(s.clone())
+            }).collect()),
             node_selector: self.resource.node_selector.clone(),
             ..default()
         };

@@ -162,7 +162,7 @@ spec:
       serviceAccountName: sftpgo-operator
       containers:
         - name: operator
-          image: ghcr.io/digizuite/sftpgo-k8s-operator:master
+          image: digizuite.azurecr.io/digizuite/sftpgo-k8s-operator:master
           imagePullPolicy: Always
           env:
             - name: RUST_LOG

@@ -160,10 +160,12 @@ spec:
         app.kubernetes.io/part-of: sftpgo
     spec:
       serviceAccountName: sftpgo-operator
+      imagePullSecrets:
+        - name: {{ .Values.operator.imagePullSecret }}
       containers:
         - name: operator
-          image: ghcr.io/digizuite/sftpgo-k8s-operator:master
-          imagePullPolicy: Always
+          image: {{ .Values.operator.image}}
+          imagePullPolicy: {{ .Values.operator.imagePullPolicy }}
           env:
             - name: RUST_LOG
               value: "sftpgo_operator=info,sftpgo_client=info"

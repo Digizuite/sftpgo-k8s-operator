@@ -27,7 +27,7 @@ on:
       - ".github/workflows/docker-image.yml"
 
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: digizuite.azurecr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
@@ -50,8 +50,8 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DIGIZUITE_DEV_ACR_USERNAME }}
+          password: ${{ secrets.DIGIZUITE_DEV_ACR_PASSWORD }}
 
       - name: Docker meta
         id: meta

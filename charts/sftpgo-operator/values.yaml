@@ -1,5 +1,8 @@
 operator:
   enable: true
+  imagePullPolicy: Always
+  image: digizuite.azurecr.io/digizuite/sftpgo-k8s-operator:master
+  imagePullSecret: ""
   resources:
     limits:
       cpu: 100m
